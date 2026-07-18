@@ -2,15 +2,12 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { StarterAccount } from "@/lib/starter-accounts";
 import { getSupabaseBrowserClient, hasSupabaseEnv } from "@/lib/supabase";
-
-type AuthMode = "signin" | "signup";
 
 export function AuthForm() {
   const router = useRouter();
-  const [mode, setMode] = useState<AuthMode>("signup");
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -24,7 +21,7 @@ export function AuthForm() {
     setError("");
 
     if (!envReady) {
-      setError("Supabase env values missing hain. Pehle .env.local configure karo.");
+      setError("Supabase env values missing hain. Pehle `.env` configure karo.");
       return;
     }
 
@@ -38,39 +35,43 @@ export function AuthForm() {
     setIsSubmitting(true);
 
     try {
-      if (mode === "signup") {
-        const { error: signUpError } = await supabase.auth.signUp({
-          email,
+      const response = await fetch("/api/starter-login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username,
           password,
-          options: {
-            data: {
-              full_name: fullName,
-            },
-          },
-        });
+        }),
+      });
+      const payload = (await response.json()) as {
+        account?: StarterAccount;
+        error?: string;
+      };
 
-        if (signUpError) {
-          throw signUpError;
-        }
-
-        setMessage(
-          "Account create ho gaya. Agar auto-login mil gaya hai to onboarding par jao, warna email verify karke sign in karo.",
-        );
-
-        router.push("/onboarding");
-      } else {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-        if (signInError) {
-          throw signInError;
-        }
-
-        setMessage("Login successful. Onboarding par redirect kar rahe hain.");
-        router.push("/onboarding");
+      if (!response.ok || !payload.account) {
+        throw new Error(payload.error ?? "Invalid username or password.");
       }
+
+      const starterAccount = payload.account;
+
+      // Bypass Supabase Auth completely and use a local session mock
+      const mockSession = {
+        user: {
+          id: starterAccount.authUserId,
+          email: starterAccount.email,
+          user_metadata: {
+            full_name: starterAccount.fullName,
+          }
+        }
+      };
+      
+      localStorage.setItem("mock_auth_session", JSON.stringify(mockSession));
+
+      setMessage("Login successful. Tumhara personal workspace open kar rahe hain.");
+      router.push("/");
+      router.refresh();
     } catch (submissionError) {
       const nextError =
         submissionError instanceof Error
@@ -84,54 +85,23 @@ export function AuthForm() {
 
   return (
     <section className="grid-two">
-      <div className="section-panel">
-        <span className="eyebrow">Separate accounts</span>
-        <h2 className="section-title">Sign up for each learner</h2>
-        <p className="section-copy">
-          Tum aur tumhari bahan ke alag accounts honge. Isi se review schedule,
-          due cards, aur learning history independent rahegi.
+      <div className="section-panel auth-panel auth-panel-primary">
+        <span className="eyebrow">Memory studio</span>
+        <h2 className="headline auth-headline">Come back tomorrow and it still feels fresh.</h2>
+        <p className="section-copy auth-copy">
+          Har login ke baad tumhara khud ka calm, focused recall space khulega jahan
+          learning, review aur streaks neatly alag rahenge.
         </p>
 
-        <div className="chips" style={{ marginBottom: "1rem" }}>
-          <button
-            className="secondary-button"
-            onClick={() => setMode("signup")}
-            type="button"
-          >
-            Create account
-          </button>
-          <button
-            className="secondary-button"
-            onClick={() => setMode("signin")}
-            type="button"
-          >
-            Sign in
-          </button>
-        </div>
-
         <form className="capture-form" onSubmit={handleSubmit}>
-          {mode === "signup" ? (
-            <div className="field">
-              <label htmlFor="full-name">Full name</label>
-              <input
-                id="full-name"
-                name="fullName"
-                onChange={(event) => setFullName(event.target.value)}
-                placeholder="Example: Deependra"
-                value={fullName}
-              />
-            </div>
-          ) : null}
-
           <div className="field">
-            <label htmlFor="email">Email</label>
+            <label htmlFor="username">Username</label>
             <input
-              id="email"
-              name="email"
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="your@email.com"
-              type="email"
-              value={email}
+              id="username"
+              name="username"
+              onChange={(event) => setUsername(event.target.value)}
+              placeholder="Enter username"
+              value={username}
             />
           </div>
 
@@ -141,18 +111,14 @@ export function AuthForm() {
               id="password"
               name="password"
               onChange={(event) => setPassword(event.target.value)}
-              placeholder="At least 6 characters"
+              placeholder="Enter password"
               type="password"
               value={password}
             />
           </div>
 
           <button className="primary-button" disabled={isSubmitting} type="submit">
-            {isSubmitting
-              ? "Please wait..."
-              : mode === "signup"
-                ? "Create learner account"
-                : "Sign in"}
+            {isSubmitting ? "Please wait..." : "Login"}
           </button>
         </form>
 
@@ -169,29 +135,29 @@ export function AuthForm() {
         ) : null}
       </div>
 
-      <div className="section-panel">
-        <span className="eyebrow">What happens next</span>
-        <h3 className="section-title">Profile onboarding flow</h3>
+      <div className="section-panel auth-panel">
+        <span className="eyebrow">Why it feels better</span>
+        <h3 className="section-title">Simple, private, repeatable</h3>
         <div className="stack">
           <article className="list-card">
-            <h4>1. Choose learner mode</h4>
+            <h4>One login, one study world</h4>
             <p className="section-copy" style={{ marginTop: "0.45rem" }}>
-              `general`, `school`, ya `neet` ke hisaab se subject presets aur
-              prompt templates load honge.
+              Har learner ka dashboard aur review queue independent rahega, isliye focus
+              tootega nahi.
             </p>
           </article>
           <article className="list-card">
-            <h4>2. Save profile row</h4>
+            <h4>Gentle daily rhythm</h4>
             <p className="section-copy" style={{ marginTop: "0.45rem" }}>
-              Signup ke baad `profiles` table me full name, grade, target exam,
-              daily goal aur weekly card target save karenge.
+              UI intentionally clean rakha gaya hai taaki tum bas aao, login karo, aur
+              recall loop me ghus jao.
             </p>
           </article>
           <article className="list-card">
-            <h4>3. Attach subject presets</h4>
+            <h4>Built for repeat visits</h4>
             <p className="section-copy" style={{ marginTop: "0.45rem" }}>
-              First pass me tumhari profile ke liye DSA/Web/Backend defaults milengi.
-              Sister ko same system me second profile ke roop me add karenge.
+              Soft visuals, focused cards aur clear actions website ko noisy nahi hone
+              dete.
             </p>
           </article>
         </div>

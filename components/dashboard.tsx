@@ -1,35 +1,29 @@
 import Link from "next/link";
-import {
-  getCardsForProfile,
-  getEntriesForProfile,
-  sampleProfiles,
-} from "@/lib/mock-data";
 import { learnerModeLabels, promptStyleLabels } from "@/lib/profile-copy";
 import { formatShortDate, getRelativeStatus } from "@/lib/scheduler";
-import { Profile } from "@/lib/types";
+import {
+  ConceptCard,
+  DashboardStats,
+  LearningEntry,
+  Profile,
+  WeakTopic,
+} from "@/lib/types";
 
 type DashboardViewProps = {
+  cards: ConceptCard[];
+  entries: LearningEntry[];
   profile: Profile;
-  showProfilePreview?: boolean;
+  stats: DashboardStats;
+  weakTopics: WeakTopic[];
 };
 
-function buildProfileHref(profileId: string) {
-  return `/?profile=${profileId}`;
-}
-
 export function DashboardView({
+  cards,
+  entries,
   profile,
-  showProfilePreview = true,
+  stats,
+  weakTopics,
 }: DashboardViewProps) {
-  const entries = getEntriesForProfile(profile.id);
-  const cards = getCardsForProfile(profile.id);
-  const dueToday = cards.filter(
-    (card) => new Date(card.nextReviewAt).getTime() <= Date.now(),
-  ).length;
-  const highPriority = cards.filter(
-    (card) => card.examPriority === "high",
-  ).length;
-
   const dueCards = cards
     .slice()
     .sort(
@@ -65,19 +59,19 @@ export function DashboardView({
           <div className="metrics">
             <div className="metric">
               <p className="metric-label">Learning entries</p>
-              <p className="metric-value">{entries.length}</p>
+              <p className="metric-value">{stats.totalEntries}</p>
             </div>
             <div className="metric">
               <p className="metric-label">Active cards</p>
-              <p className="metric-value">{cards.length}</p>
+              <p className="metric-value">{stats.activeCards}</p>
             </div>
             <div className="metric">
               <p className="metric-label">Due now</p>
-              <p className="metric-value">{dueToday}</p>
+              <p className="metric-value">{stats.dueToday}</p>
             </div>
             <div className="metric">
-              <p className="metric-label">High priority</p>
-              <p className="metric-value">{highPriority}</p>
+              <p className="metric-label">Retention score</p>
+              <p className="metric-value">{stats.retentionScore}%</p>
             </div>
           </div>
         </div>
@@ -85,66 +79,95 @@ export function DashboardView({
 
       <section className="grid-two">
         <div className="section-panel">
-          <h3 className="section-title">
-            {showProfilePreview ? "Switch learner" : "Profile setup status"}
-          </h3>
+          <h3 className="section-title">Workspace status</h3>
           <p className="section-copy">
-            {showProfilePreview
-              ? "Final app me ye section Supabase auth ke baad real account switch ya login flow me replace hoga. Abhi ye multi-profile behavior preview karta hai."
-              : "Abhi app tumhari real Supabase profile read kar raha hai. Sister profile ko baad me same base par add karenge."}
+            Ye workspace sirf current logged-in account ka data read kar raha hai. Is
+            login ke bahar kisi aur learner ka combined view nahi dikhaya jayega.
           </p>
           <div className="stack">
-            {showProfilePreview
-              ? sampleProfiles.map((item) => (
-                  <Link
-                    className="list-card"
-                    href={buildProfileHref(item.id)}
-                    key={item.id}
-                  >
-                    <div className="chips">
-                      <span className="chip">{item.fullName}</span>
-                      <span className="chip">{learnerModeLabels[item.learnerMode]}</span>
-                    </div>
-                    <h4 style={{ marginTop: "0.75rem" }}>{item.tagline}</h4>
-                    <div className="list-meta">
-                      <span>{item.targetExam ?? "Self-paced learning"}</span>
-                      <span>{item.dailyGoalMinutes} min/day</span>
-                    </div>
-                  </Link>
-                ))
-              : [
-                  <article className="list-card" key="active-profile">
-                    <div className="chips">
-                      <span className="chip">{profile.fullName}</span>
-                      <span className="chip">{learnerModeLabels[profile.learnerMode]}</span>
-                    </div>
-                    <h4 style={{ marginTop: "0.75rem" }}>
-                      Your main profile is active
-                    </h4>
-                    <div className="list-meta">
-                      <span>{profile.targetExam ?? "No exam target set"}</span>
-                      <span>{profile.weeklyTargetCards} cards/week</span>
-                    </div>
-                  </article>,
-                ]}
+            <article className="list-card">
+              <div className="chips">
+                <span className="chip">{profile.fullName}</span>
+                <span className="chip">{learnerModeLabels[profile.learnerMode]}</span>
+              </div>
+              <h4 style={{ marginTop: "0.75rem" }}>Personal space active</h4>
+              <div className="list-meta">
+                <span>{profile.targetExam ?? "Self-paced learning"}</span>
+                <span>{profile.weeklyTargetCards} cards/week</span>
+              </div>
+            </article>
           </div>
         </div>
 
         <div className="section-panel">
-          <h3 className="section-title">Subjects and focus</h3>
+          <h3 className="section-title">Current track</h3>
           <p className="section-copy">
-            Har learner ke liye subject buckets aur question behavior alag rakha jayega.
+            Interface ab simplified rahega: Deependra ke liye `general` track aur
+            Khushbu ke liye `school + neet` track.
           </p>
           <div className="stack">
-            {profile.subjects.map((subject) => (
-              <article className="list-card" key={subject.id}>
-                <div className="chips">
-                  <span className="chip">{subject.name}</span>
-                  <span className="chip">{subject.accent}</span>
-                </div>
-                <h4 style={{ marginTop: "0.75rem" }}>{subject.focus}</h4>
+            <article className="list-card">
+              <h4>{profile.tagline}</h4>
+              <p className="section-copy" style={{ marginTop: "0.45rem" }}>
+                Question types aur review behavior isi selected track ke hisaab se adapt
+                honge.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid-two">
+        <div className="section-panel">
+          <h3 className="section-title">Weekly pulse</h3>
+          <p className="section-copy">
+            Ye section batata hai ki recall consistency aur reinforcement need kaha par hai.
+          </p>
+          <div className="stack">
+            <article className="list-card">
+              <h4>Reviewed in last 7 days</h4>
+              <p className="metric-value" style={{ marginTop: "0.5rem" }}>
+                {stats.reviewedThisWeek}
+              </p>
+            </article>
+            <article className="list-card">
+              <h4>High priority cards</h4>
+              <p className="metric-value" style={{ marginTop: "0.5rem" }}>
+                {stats.highPriority}
+              </p>
+            </article>
+            <article className="list-card">
+              <h4>Weak topics flagged</h4>
+              <p className="metric-value" style={{ marginTop: "0.5rem" }}>
+                {stats.weakTopicsCount}
+              </p>
+            </article>
+          </div>
+        </div>
+
+        <div className="section-panel">
+          <h3 className="section-title">Recall pressure</h3>
+          <p className="section-copy">
+            Ye metric batata hai ki current track me kin cards ko extra reinforcement
+            ki zarurat hai.
+          </p>
+          <div className="stack">
+            {weakTopics.length > 0 ? (
+              <article className="list-card">
+                <h4>{stats.weakTopicsCount} card(s) need reinforcement</h4>
+                <p className="section-copy" style={{ marginTop: "0.45rem" }}>
+                  System low-ease ya low-streak cards ko jaldi wapas layega so recall
+                  stable ho sake.
+                </p>
               </article>
-            ))}
+            ) : (
+              <article className="list-card">
+                <h4>No weak cards flagged</h4>
+                <p className="section-copy" style={{ marginTop: "0.45rem" }}>
+                  Abhi tak cards healthy lag rahe hain. Consistency maintain rakho.
+                </p>
+              </article>
+            )}
           </div>
         </div>
       </section>
@@ -153,14 +176,13 @@ export function DashboardView({
         <div className="section-panel">
           <h3 className="section-title">Due Queue Preview</h3>
           <p className="section-copy">
-            Question pattern learner type ke hisaab se adapt hota hai, taaki engineering
-            aur NEET dono use-cases natural feel karein.
+            Question pattern learner type ke hisaab se adapt hota hai, taaki general
+            aur school + NEET dono use-cases natural feel karein.
           </p>
           <div className="stack">
             {dueCards.map((card) => (
               <article className="list-card" key={card.id}>
                 <div className="chips">
-                  <span className="chip">{card.subject}</span>
                   <span className="chip">{promptStyleLabels[card.promptStyle]}</span>
                 </div>
                 <h4 style={{ marginTop: "0.75rem" }}>{card.prompt}</h4>
@@ -182,7 +204,6 @@ export function DashboardView({
             {entries.map((entry) => (
               <article className="list-card" key={entry.id}>
                 <div className="chips">
-                  <span className="chip">{entry.subject}</span>
                   <span className="chip">{formatShortDate(entry.createdAt)}</span>
                   {entry.sourceType ? <span className="chip">{entry.sourceType}</span> : null}
                 </div>

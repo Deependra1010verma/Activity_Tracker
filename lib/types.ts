@@ -71,3 +71,18 @@ export type ReviewLog = {
   rating: ReviewRating;
   nextReviewAt: string;
 };
+
+export type DashboardStats = {
+  totalEntries: number;
+  activeCards: number;
+  dueToday: number;
+  highPriority: number;
+  reviewedThisWeek: number;
+  weakTopicsCount: number;
+  retentionScore: number;
+};
+
+export type WeakTopic = {
+  subject: string;
+  count: number;
+};

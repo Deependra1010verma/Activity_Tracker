@@ -4,63 +4,34 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ReviewBoardView } from "@/components/review-board";
 import { mapProfileRowToProfile, mapSubjectRow } from "@/lib/profile-mappers";
+import { mapCardRowToConceptCard, ReviewCardRow } from "@/lib/review-mappers";
 import { getSupabaseBrowserClient, hasSupabaseEnv } from "@/lib/supabase";
-import { ConceptCard, Profile, PromptStyle } from "@/lib/types";
+import { ConceptCard, Profile } from "@/lib/types";
 
 type AuthUser = {
   id: string;
   email?: string | null;
 };
 
-type LoadState = "loading" | "signed_out" | "needs_profile" | "ready" | "error";
-
-type CardRow = {
+type ProfileRow = {
   id: string;
-  prompt_style: PromptStyle;
-  prompt: string;
-  answer: string;
-  current_interval_days: number;
-  ease: number;
-  streak: number;
-  last_reviewed_at: string | null;
-  next_review_at: string;
-  exam_priority: "low" | "medium" | "high" | null;
-  concepts:
-    | Array<{
-        concept_text: string;
-        learning_entries: Array<{
-          id: string;
-          title: string;
-          subject: string;
-          profile_id: string;
-        }>;
-      }>
-    | null;
-  card_tags: Array<{ tag: string }> | null;
+  full_name: string;
+  role: Profile["role"];
+  learner_mode: Profile["learnerMode"];
+  grade: string | null;
+  target_exam: string | null;
+  daily_goal_minutes: number;
+  weekly_target_cards: number;
 };
 
-function mapCardRow(card: CardRow): ConceptCard {
-  const conceptRow = card.concepts?.[0];
-  const entryRow = conceptRow?.learning_entries?.[0];
+type SubjectRow = {
+  id: string;
+  name: string;
+  accent: string | null;
+  focus: string | null;
+};
 
-  return {
-    id: card.id,
-    profileId: entryRow?.profile_id ?? "",
-    concept: conceptRow?.concept_text ?? "Untitled concept",
-    subject: entryRow?.subject ?? "General",
-    sourceTitle: entryRow?.title ?? "Untitled source",
-    promptStyle: card.prompt_style,
-    prompt: card.prompt,
-    answer: card.answer,
-    tags: card.card_tags?.map((tag) => tag.tag) ?? [],
-    lastReviewedAt: card.last_reviewed_at,
-    nextReviewAt: card.next_review_at,
-    currentIntervalDays: card.current_interval_days,
-    ease: Number(card.ease),
-    streak: card.streak,
-    examPriority: card.exam_priority ?? undefined,
-  };
-}
+type LoadState = "loading" | "signed_out" | "needs_profile" | "ready" | "error";
 
 export function ReviewShell() {
   const [state, setState] = useState<LoadState>("loading");
@@ -85,15 +56,15 @@ export function ReviewShell() {
         return;
       }
 
-      const {
-        data: { user: currentUser },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError) {
-        setState("error");
-        setError(userError.message);
-        return;
+      const sessionStr = localStorage.getItem("mock_auth_session");
+      let currentUser = null;
+      if (sessionStr) {
+        try {
+          const session = JSON.parse(sessionStr);
+          currentUser = session?.user;
+        } catch (e) {
+          console.error("Invalid mock session", e);
+        }
       }
 
       if (!currentUser) {
@@ -103,7 +74,7 @@ export function ReviewShell() {
 
       setUser({ id: currentUser.id, email: currentUser.email });
 
-      const { data: profileRow, error: profileError } = await supabase
+      const { data: rawProfileRow, error: profileError } = await supabase
         .from("profiles")
         .select(
           "id, full_name, role, learner_mode, grade, target_exam, daily_goal_minutes, weekly_target_cards",
@@ -117,42 +88,45 @@ export function ReviewShell() {
         return;
       }
 
+      const profileRow = rawProfileRow as ProfileRow | null;
+
       if (!profileRow) {
         setState("needs_profile");
         return;
       }
 
-      const { data: subjectRows, error: subjectError } = await supabase
-        .from("subjects")
-        .select("id, name, accent, focus")
-        .eq("profile_id", profileRow.id)
-        .order("created_at", { ascending: true });
-
-      if (subjectError) {
-        setState("error");
-        setError(subjectError.message);
-        return;
-      }
-
       const nowIso = new Date().toISOString();
-      const { data: cardRows, error: cardError } = await supabase
-        .from("cards")
-        .select(
-          "id, prompt_style, prompt, answer, current_interval_days, ease, streak, last_reviewed_at, next_review_at, exam_priority, concepts(concept_text, learning_entries(id, title, subject, profile_id)), card_tags(tag)",
-        )
-        .lte("next_review_at", nowIso)
-        .order("next_review_at", { ascending: true });
+      const [
+        { data: rawSubjectRows, error: subjectError },
+        { data: rawCardRows, error: cardError },
+      ] = await Promise.all([
+        supabase
+          .from("subjects")
+          .select("id, name, accent, focus")
+          .eq("profile_id", profileRow.id)
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("cards")
+          .select(
+            "id, prompt_style, prompt, answer, current_interval_days, ease, streak, last_reviewed_at, next_review_at, exam_priority, concepts(concept_text, learning_entries(id, title, subject, profile_id)), card_tags(tag)",
+          )
+          .lte("next_review_at", nowIso)
+          .order("next_review_at", { ascending: true }),
+      ]);
 
-      if (cardError) {
+      if (subjectError || cardError) {
         setState("error");
-        setError(cardError.message);
+        setError(subjectError?.message || cardError?.message || "Review data load nahi ho paaya.");
         return;
       }
+
+      const subjectRows = (rawSubjectRows ?? []) as unknown as SubjectRow[];
+      const cardRows = (rawCardRows ?? []) as unknown as ReviewCardRow[];
 
       setProfile(
-        mapProfileRowToProfile(profileRow, (subjectRows ?? []).map(mapSubjectRow)),
+        mapProfileRowToProfile(profileRow, subjectRows.map(mapSubjectRow)),
       );
-      setCards((cardRows ?? []).map((card) => mapCardRow(card as CardRow)));
+      setCards(cardRows.map((card) => mapCardRowToConceptCard(card)));
       setState("ready");
     }
 

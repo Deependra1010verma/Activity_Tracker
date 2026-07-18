@@ -12,6 +12,24 @@ type AuthUser = {
   email?: string | null;
 };
 
+type ProfileRow = {
+  id: string;
+  full_name: string;
+  role: Profile["role"];
+  learner_mode: Profile["learnerMode"];
+  grade: string | null;
+  target_exam: string | null;
+  daily_goal_minutes: number;
+  weekly_target_cards: number;
+};
+
+type SubjectRow = {
+  id: string;
+  name: string;
+  accent: string | null;
+  focus: string | null;
+};
+
 type LoadState = "loading" | "signed_out" | "needs_profile" | "ready" | "error";
 
 export function LearnShell() {
@@ -36,15 +54,15 @@ export function LearnShell() {
         return;
       }
 
-      const {
-        data: { user: currentUser },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError) {
-        setState("error");
-        setError(userError.message);
-        return;
+      const sessionStr = localStorage.getItem("mock_auth_session");
+      let currentUser = null;
+      if (sessionStr) {
+        try {
+          const session = JSON.parse(sessionStr);
+          currentUser = session?.user;
+        } catch (e) {
+          console.error("Invalid mock session", e);
+        }
       }
 
       if (!currentUser) {
@@ -54,7 +72,7 @@ export function LearnShell() {
 
       setUser({ id: currentUser.id, email: currentUser.email });
 
-      const { data: profileRow, error: profileError } = await supabase
+      const { data: rawProfileRow, error: profileError } = await supabase
         .from("profiles")
         .select(
           "id, full_name, role, learner_mode, grade, target_exam, daily_goal_minutes, weekly_target_cards",
@@ -68,12 +86,14 @@ export function LearnShell() {
         return;
       }
 
+      const profileRow = rawProfileRow as ProfileRow | null;
+
       if (!profileRow) {
         setState("needs_profile");
         return;
       }
 
-      const { data: subjectRows, error: subjectError } = await supabase
+      const { data: rawSubjectRows, error: subjectError } = await supabase
         .from("subjects")
         .select("id, name, accent, focus")
         .eq("profile_id", profileRow.id)
@@ -85,8 +105,10 @@ export function LearnShell() {
         return;
       }
 
+      const subjectRows = (rawSubjectRows ?? []) as unknown as SubjectRow[];
+
       setProfile(
-        mapProfileRowToProfile(profileRow, (subjectRows ?? []).map(mapSubjectRow)),
+        mapProfileRowToProfile(profileRow, subjectRows.map(mapSubjectRow)),
       );
       setState("ready");
     }

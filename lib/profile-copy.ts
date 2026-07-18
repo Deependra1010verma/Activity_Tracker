@@ -2,8 +2,8 @@ import { LearnerMode, PromptStyle } from "@/lib/types";
 
 export const learnerModeLabels: Record<LearnerMode, string> = {
   general: "General Learning",
-  school: "School",
-  neet: "NEET Track",
+  school: "School + NEET",
+  neet: "School + NEET",
 };
 
 export const promptStyleLabels: Record<PromptStyle, string> = {
@@ -52,7 +52,7 @@ export const learnerModeCopy: Record<
     ],
   },
   school: {
-    hero: "Simple chapter-first flow for school revision and line-by-line clarity.",
+    hero: "Unified school + NEET flow for chapter revision and line-by-line clarity.",
     captureLabel:
       "Aaj kis chapter ya topic ka revision kiya, uske key points yahan likho.",
     conceptsLabel:
@@ -77,7 +77,7 @@ export const learnerModeCopy: Record<
     ],
   },
   neet: {
-    hero: "Exam-focused review system with chapter-based practice and weak topic targeting.",
+    hero: "Unified school + NEET review system with chapter practice and weak topic targeting.",
     captureLabel:
       "Chapter, NCERT line, test mistake, ya module concept add karo so it comes back before forgetting.",
     conceptsLabel:

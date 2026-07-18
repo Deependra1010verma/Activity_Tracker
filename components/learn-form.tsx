@@ -11,11 +11,29 @@ type LearnFormViewProps = {
   profile: Profile;
 };
 
+type SubjectIdRow = {
+  id: string;
+};
+
+type EntryIdRow = {
+  id: string;
+};
+
+type ConceptInsertRow = {
+  id: string;
+  concept_text: string;
+};
+
+type CardIdRow = {
+  id: string;
+};
+
 export function LearnFormView({ profile }: LearnFormViewProps) {
   const router = useRouter();
   const modeCopy = learnerModeCopy[profile.learnerMode];
   const [topic, setTopic] = useState("");
-  const [subject, setSubject] = useState(profile.subjects[0]?.name ?? "");
+  const subject =
+    profile.learnerMode === "general" ? "General Memory Space" : "School + NEET Space";
   const [sourceType, setSourceType] = useState(
     profile.learnerMode === "general" ? "self notes" : "NCERT",
   );
@@ -55,7 +73,7 @@ export function LearnFormView({ profile }: LearnFormViewProps) {
     setIsSubmitting(true);
 
     try {
-      const { data: subjectRow, error: subjectError } = await supabase
+      const { data: rawSubjectRow, error: subjectError } = await supabase
         .from("subjects")
         .select("id")
         .eq("profile_id", profile.id)
@@ -66,7 +84,9 @@ export function LearnFormView({ profile }: LearnFormViewProps) {
         throw subjectError;
       }
 
-      const { data: entry, error: entryError } = await supabase
+      const subjectRow = rawSubjectRow as SubjectIdRow | null;
+
+      const { data: rawEntry, error: entryError } = await supabase
         .from("learning_entries")
         .insert({
           profile_id: profile.id,
@@ -84,7 +104,9 @@ export function LearnFormView({ profile }: LearnFormViewProps) {
         throw entryError;
       }
 
-      const { data: conceptRows, error: conceptError } = await supabase
+      const entry = rawEntry as EntryIdRow;
+
+      const { data: rawConceptRows, error: conceptError } = await supabase
         .from("concepts")
         .insert(
           parsedConcepts.map((conceptText) => ({
@@ -97,6 +119,8 @@ export function LearnFormView({ profile }: LearnFormViewProps) {
       if (conceptError) {
         throw conceptError;
       }
+
+      const conceptRows = (rawConceptRows ?? []) as ConceptInsertRow[];
 
       const generatedCards = conceptRows.flatMap((conceptRow) =>
         generateCardsForConcept(conceptRow.concept_text, profile.learnerMode, subject).map(
@@ -119,7 +143,7 @@ export function LearnFormView({ profile }: LearnFormViewProps) {
         exam_priority: card.examPriority,
       }));
 
-      const { data: createdCards, error: cardError } = await supabase
+      const { data: rawCreatedCards, error: cardError } = await supabase
         .from("cards")
         .insert(cardPayload)
         .select("id");
@@ -127,6 +151,8 @@ export function LearnFormView({ profile }: LearnFormViewProps) {
       if (cardError) {
         throw cardError;
       }
+
+      const createdCards = (rawCreatedCards ?? []) as CardIdRow[];
 
       const tagPayload =
         createdCards?.flatMap((card, index) =>
@@ -188,20 +214,6 @@ export function LearnFormView({ profile }: LearnFormViewProps) {
               }
               value={topic}
             />
-          </div>
-
-          <div className="field">
-            <label htmlFor="subject">Subject</label>
-            <select
-              id="subject"
-              name="subject"
-              onChange={(event) => setSubject(event.target.value)}
-              value={subject}
-            >
-              {profile.subjects.map((subject) => (
-                <option key={subject.id}>{subject.name}</option>
-              ))}
-            </select>
           </div>
 
           {profile.learnerMode !== "general" ? (

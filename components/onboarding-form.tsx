@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSubjectPresetsForMode, getTaglineForMode } from "@/lib/subject-presets";
-import { mapSubjectRow } from "@/lib/profile-mappers";
+import { getStarterAccountByEmail } from "@/lib/starter-accounts";
 import { getSupabaseBrowserClient, hasSupabaseEnv } from "@/lib/supabase";
 import { LearnerMode, LearnerRole } from "@/lib/types";
 
@@ -13,6 +13,16 @@ type AuthUser = {
   user_metadata?: {
     full_name?: string;
   };
+};
+
+type ExistingProfileRow = {
+  id: string;
+  role: LearnerRole;
+  learner_mode: LearnerMode;
+  grade: string | null;
+  target_exam: string | null;
+  daily_goal_minutes: number;
+  weekly_target_cards: number;
 };
 
 export function OnboardingForm() {
@@ -47,9 +57,16 @@ export function OnboardingForm() {
         return;
       }
 
-      const {
-        data: { user: currentUser },
-      } = await supabase.auth.getUser();
+      const sessionStr = localStorage.getItem("mock_auth_session");
+      let currentUser = null;
+      if (sessionStr) {
+        try {
+          const session = JSON.parse(sessionStr);
+          currentUser = session?.user;
+        } catch (e) {
+          console.error("Invalid mock session", e);
+        }
+      }
 
       if (currentUser) {
         setUser({
@@ -61,13 +78,27 @@ export function OnboardingForm() {
         });
         setFullName(currentUser.user_metadata.full_name ?? "");
 
-        const { data: existingProfile } = await supabase
+        const starterAccount = getStarterAccountByEmail(currentUser.email);
+
+        if (starterAccount) {
+          setFullName(starterAccount.fullName);
+          setLearnerMode(starterAccount.learnerMode);
+          setRole(starterAccount.role);
+          setGrade(starterAccount.grade ?? "");
+          setTargetExam(starterAccount.targetExam ?? "");
+          setDailyGoalMinutes(String(starterAccount.dailyGoalMinutes));
+          setWeeklyTargetCards(String(starterAccount.weeklyTargetCards));
+        }
+
+        const { data: rawExistingProfile } = await supabase
           .from("profiles")
           .select(
             "id, role, learner_mode, grade, target_exam, daily_goal_minutes, weekly_target_cards",
           )
           .eq("auth_user_id", currentUser.id)
           .maybeSingle();
+
+        const existingProfile = rawExistingProfile as ExistingProfileRow | null;
 
         if (existingProfile) {
           const mode = existingProfile.learner_mode as LearnerMode;
@@ -206,6 +237,10 @@ export function OnboardingForm() {
           Base app multi-user rahega, but pahle tumhari profile complete karna best hai.
           Jab ye stable ho jayegi, tab same flow se sister profile add kar denge.
         </p>
+        <p className="section-copy">
+          Is step me sirf tumhari main profile complete karni hai. Sister ke liye baad me
+          alag account se login karke same onboarding dobara use hoga.
+        </p>
 
         {!envReady ? (
           <p className="section-copy" style={{ color: "#b91c1c" }}>
@@ -250,8 +285,7 @@ export function OnboardingForm() {
               value={learnerMode}
             >
               <option value="general">General Learning</option>
-              <option value="school">School</option>
-              <option value="neet">NEET</option>
+              <option value="neet">School + NEET</option>
             </select>
           </div>
 
@@ -344,11 +378,12 @@ export function OnboardingForm() {
           <article className="list-card">
             <h4>Current selected mode</h4>
             <p className="section-copy" style={{ marginTop: "0.45rem" }}>
-              {learnerMode} · {getTaglineForMode(learnerMode)}
+              {learnerMode === "general" ? "general" : "school + neet"} ·{" "}
+              {getTaglineForMode(learnerMode)}
             </p>
           </article>
           <article className="list-card">
-            <h4>Subjects that will be created</h4>
+            <h4>Internal workspace bucket</h4>
             <div className="chips" style={{ marginTop: "0.75rem" }}>
               {subjectPresets.map((subject) => (
                 <span className="chip" key={subject.id}>
@@ -361,7 +396,14 @@ export function OnboardingForm() {
             <h4>When sister gets added</h4>
             <p className="section-copy" style={{ marginTop: "0.45rem" }}>
               Bas learner mode `neet` select karenge, grade and exam set karenge, aur
-              Biology/Physics/Chemistry presets automatically attach ho jayenge.
+              school + NEET focused workspace bucket automatically attach ho jayega.
+            </p>
+          </article>
+          <article className="list-card">
+            <h4>Rollout order</h4>
+            <p className="section-copy" style={{ marginTop: "0.45rem" }}>
+              1. Tumhari profile live karo. 2. Learn + review loop verify karo. 3. Tab
+              sister account par same onboarding run karo.
             </p>
           </article>
         </div>

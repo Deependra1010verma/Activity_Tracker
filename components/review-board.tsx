@@ -30,6 +30,7 @@ type ReviewBoardViewProps = {
 export function ReviewBoardView({ cards, profile }: ReviewBoardViewProps) {
   const router = useRouter();
   const [queue, setQueue] = useState(cards);
+  const [showAnswer, setShowAnswer] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -140,6 +141,7 @@ export function ReviewBoardView({ cards, profile }: ReviewBoardViewProps) {
       setMessage(
         `${rating.toUpperCase()} saved. Next review ${projection.nextIntervalDays} day(s) me aayega.`,
       );
+      setShowAnswer(false);
       router.refresh();
     } catch (submissionError) {
       const nextError =
@@ -173,17 +175,28 @@ export function ReviewBoardView({ cards, profile }: ReviewBoardViewProps) {
           <h2 className="review-prompt">{activeCard.prompt}</h2>
           <p className="section-copy">
             Source: {activeCard.sourceTitle} · Style:{" "}
-            {promptStyleLabels[activeCard.promptStyle]} · Subject: {activeCard.subject}
+            {promptStyleLabels[activeCard.promptStyle]}
           </p>
-          <div className="review-answer">
-            <strong>Expected recall:</strong> {activeCard.answer}
-          </div>
+          {showAnswer ? (
+            <div className="review-answer">
+              <strong>Expected recall:</strong> {activeCard.answer}
+            </div>
+          ) : (
+            <button
+              className="secondary-button"
+              disabled={isSubmitting}
+              onClick={() => setShowAnswer(true)}
+              type="button"
+            >
+              Show answer
+            </button>
+          )}
           <div className="rating-row">
             {previews.map((preview) => (
               <button
                 className="rating-button"
                 data-tone={preview.tone}
-                disabled={isSubmitting}
+                disabled={isSubmitting || !showAnswer}
                 key={preview.tone}
                 onClick={() => void handleRate(preview.tone)}
                 type="button"

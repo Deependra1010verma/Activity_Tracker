@@ -19,10 +19,10 @@ export default function RootLayout({
           <header className="topbar">
             <div className="brand">
               <span className="brand-mark">Recall Ledger</span>
-              <h1>Your learning should stay.</h1>
+              <h1>Study once. Keep it alive.</h1>
               <p className="muted">
-                Capture what you learned today and bring it back before your
-                brain forgets it.
+                Capture what you learned, revisit it beautifully, and make recall feel
+                light instead of heavy.
               </p>
             </div>
             <nav className="nav-links" aria-label="Primary">
@@ -36,13 +36,10 @@ export default function RootLayout({
                 Review queue
               </Link>
               <Link className="nav-pill" href="/auth">
-                Auth
+                Login
               </Link>
               <Link className="nav-pill" href="/onboarding">
-                Onboarding
-              </Link>
-              <Link className="nav-pill" href="/setup">
-                Multi-user setup
+                Profile
               </Link>
             </nav>
           </header>
