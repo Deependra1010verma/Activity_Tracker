@@ -9,12 +9,15 @@ export const metadata: Metadata = {
   title: "Recall Ledger",
   description: "Activity tracker for spaced repetition and active recall.",
   manifest: "/manifest.json",
-  themeColor: "#ec4899",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "Recall Ledger",
   },
+};
+
+export const viewport = {
+  themeColor: "#ec4899",
 };
 
 export default function RootLayout({
