@@ -10,6 +10,7 @@ import { Profile } from "@/lib/types";
 type AuthUser = {
   id: string;
   email?: string | null;
+  profile_id?: string | null;
 };
 
 type ProfileRow = {
@@ -70,46 +71,54 @@ export function LearnShell() {
         return;
       }
 
-      setUser({ id: currentUser.id, email: currentUser.email });
+      setUser({ id: currentUser.id, email: currentUser.email, profile_id: currentUser.profile_id });
 
-      const { data: rawProfileRow, error: profileError } = await supabase
-        .from("profiles")
-        .select(
-          "id, full_name, role, learner_mode, grade, target_exam, daily_goal_minutes, weekly_target_cards",
-        )
-        .eq("auth_user_id", currentUser.id)
-        .maybeSingle();
+      let profileRow = null;
+      let subjectRows: SubjectRow[] = [];
 
-      if (profileError) {
+      const cachedProfileId = currentUser.profile_id;
+      const profileSelect = "id, full_name, role, learner_mode, grade, target_exam, daily_goal_minutes, weekly_target_cards";
+
+      try {
+        if (cachedProfileId) {
+          const [profileRes, subjectRes] = await Promise.all([
+            supabase.from("profiles").select(profileSelect).eq("id", cachedProfileId).maybeSingle(),
+            supabase.from("subjects").select("id, name, accent, focus").eq("profile_id", cachedProfileId).order("created_at", { ascending: true })
+          ]);
+
+          if (profileRes.error) throw profileRes.error;
+          if (subjectRes.error) throw subjectRes.error;
+
+          profileRow = profileRes.data;
+          subjectRows = (subjectRes.data ?? []) as unknown as SubjectRow[];
+        } else {
+          const { data: pRow, error: pError } = await supabase.from("profiles").select(profileSelect).eq("auth_user_id", currentUser.id).maybeSingle();
+          if (pError) throw pError;
+          profileRow = pRow;
+
+          if (profileRow) {
+            const { data: sRows, error: sError } = await supabase.from("subjects").select("id, name, accent, focus").eq("profile_id", profileRow.id).order("created_at", { ascending: true });
+            if (sError) throw sError;
+            subjectRows = (sRows ?? []) as unknown as SubjectRow[];
+          }
+        }
+      } catch (err: any) {
         setState("error");
-        setError(profileError.message);
+        setError(err.message || "Capture flow load nahi ho paaya.");
         return;
       }
-
-      const profileRow = rawProfileRow as ProfileRow | null;
 
       if (!profileRow) {
         setState("needs_profile");
         return;
       }
 
-      const { data: rawSubjectRows, error: subjectError } = await supabase
-        .from("subjects")
-        .select("id, name, accent, focus")
-        .eq("profile_id", profileRow.id)
-        .order("created_at", { ascending: true });
-
-      if (subjectError) {
-        setState("error");
-        setError(subjectError.message);
-        return;
-      }
-
-      const subjectRows = (rawSubjectRows ?? []) as unknown as SubjectRow[];
-
       setProfile(
-        mapProfileRowToProfile(profileRow, subjectRows.map(mapSubjectRow)),
+        mapProfileRowToProfile(profileRow as ProfileRow, subjectRows.map(mapSubjectRow)),
       );
+      
+      document.body.className = profileRow.learner_mode === "neet" ? "theme-neet" : "";
+      
       setState("ready");
     }
 

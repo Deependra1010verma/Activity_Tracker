@@ -1,28 +1,45 @@
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
-
 :root {
-  --bg-gradient: linear-gradient(135deg, #fce7f3 0%, #ede9fe 50%, #e0e7ff 100%);
-  --card-bg: rgba(255, 255, 255, 0.7);
-  --card-strong: rgba(255, 255, 255, 0.95);
-  --text: #334155;
-  --text-muted: #64748b;
-  --primary: #ec4899;
-  --primary-hover: #db2777;
-  --secondary: #8b5cf6;
-  --secondary-hover: #7c3aed;
+  /* Default/General Theme (Masculine & Minimalistic) */
+  --bg-gradient: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 50%, #cbd5e1 100%);
+  --card-bg: rgba(255, 255, 255, 0.85);
+  --card-strong: rgba(255, 255, 255, 0.98);
+  --text: #1e293b;
+  --text-muted: #475569;
+  --primary: #3b82f6; /* Blue */
+  --primary-hover: #2563eb;
+  --secondary: #0f766e; /* Teal */
+  --secondary-hover: #0d9488;
   
   --good: #10b981;
   --hard: #f59e0b;
   --again: #ef4444;
   --easy: #3b82f6;
 
-  --shadow-sm: 0 4px 12px rgba(139, 92, 246, 0.05);
-  --shadow-md: 0 12px 32px rgba(139, 92, 246, 0.1);
-  --shadow-lg: 0 24px 48px rgba(139, 92, 246, 0.15);
+  --shadow-color: rgba(59, 130, 246, 0.1);
+  --shadow-sm: 0 4px 12px var(--shadow-color);
+  --shadow-md: 0 12px 32px var(--shadow-color);
+  --shadow-lg: 0 24px 48px var(--shadow-color);
   
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-pill: 9999px;
+}
+
+body.theme-neet {
+  /* Cute & Feminine Theme */
+  --bg-gradient: linear-gradient(135deg, #fce7f3 0%, #ede9fe 50%, #e0e7ff 100%);
+  --card-bg: rgba(255, 255, 255, 0.7);
+  --card-strong: rgba(255, 255, 255, 0.95);
+  --text: #334155;
+  --text-muted: #64748b;
+  --primary: #ec4899; /* Pink */
+  --primary-hover: #db2777;
+  --secondary: #8b5cf6; /* Lavender */
+  --secondary-hover: #7c3aed;
+  
+  --shadow-color: rgba(139, 92, 246, 0.15);
   --radius-lg: 28px;
   --radius-xl: 36px;
-  --radius-pill: 9999px;
 }
 
 * {
@@ -36,7 +53,6 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: 'Nunito', sans-serif;
   color: var(--text);
   background: var(--bg-gradient);
   background-attachment: fixed;

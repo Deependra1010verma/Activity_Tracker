@@ -170,7 +170,7 @@ export function LearnFormView({ profile }: LearnFormViewProps) {
     <div className="centered-page">
       <div className="cute-card" style={{ maxWidth: "650px", width: "100%" }}>
         <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-          <h2 className="cute-title" style={{ fontSize: "2.2rem" }}>Log New Learning 🌸</h2>
+          <h2 className="cute-title" style={{ fontSize: "2.2rem" }}>Log New Learning {profile.learnerMode === "neet" ? "🌸" : "⚡"}</h2>
           <p className="cute-subtitle">What did you learn today? Let's make sure it sticks forever.</p>
         </div>
 
@@ -182,7 +182,7 @@ export function LearnFormView({ profile }: LearnFormViewProps) {
               name="topic"
               className="cute-input"
               onChange={(event) => setTopic(event.target.value)}
-              placeholder="e.g. Basics of Binary Search"
+              placeholder={profile.learnerMode === "general" ? "e.g. Basics of Binary Search" : "e.g. Cell organelles"}
               value={topic}
             />
           </div>
@@ -206,7 +206,11 @@ export function LearnFormView({ profile }: LearnFormViewProps) {
               name="concepts"
               className="cute-input"
               onChange={(event) => setConcepts(event.target.value)}
-              placeholder="1. Binary search needs sorted array&#10;2. Time complexity is O(log n)"
+              placeholder={
+                profile.learnerMode === "general"
+                  ? "1. Binary search needs sorted array\n2. Time complexity is O(log n)"
+                  : "1. Mitochondria is the powerhouse of the cell\n2. Ribosomes synthesize proteins"
+              }
               value={concepts}
             />
           </div>

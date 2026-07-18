@@ -19,7 +19,7 @@ export function DashboardView({ profile, stats }: DashboardViewProps) {
     <div className="centered-page" style={{ flexDirection: "column", gap: "2rem" }}>
       <div className="cute-card" style={{ maxWidth: "600px", width: "100%", textAlign: "center" }}>
         <h2 className="cute-title">
-          {greeting}, {profile.fullName.split(" ")[0]}! 🌸
+          {greeting}, {profile.fullName.split(" ")[0]}! {profile.learnerMode === "neet" ? "🌸" : "⚡"}
         </h2>
         <p className="cute-subtitle">
           {stats.dueToday > 0

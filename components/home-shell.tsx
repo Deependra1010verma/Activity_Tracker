@@ -24,6 +24,7 @@ import {
 type AuthUser = {
   id: string;
   email?: string | null;
+  profile_id?: string | null;
 };
 
 type ProfileRow = {
@@ -102,84 +103,89 @@ export function HomeShell() {
       setUser({
         id: currentUser.id,
         email: currentUser.email,
+        profile_id: currentUser.profile_id
       });
 
-      const { data: rawProfileRow, error: profileError } = await supabase
-        .from("profiles")
-        .select(
-          "id, full_name, role, learner_mode, grade, target_exam, daily_goal_minutes, weekly_target_cards",
-        )
-        .eq("auth_user_id", currentUser.id)
-        .maybeSingle();
+      let profileRow = null;
+      let subjectRows: SubjectRow[] = [];
+      let entryRows: LearningEntryRow[] = [];
+      let cardRows: ReviewCardRow[] = [];
 
-      if (profileError) {
+      const cachedProfileId = currentUser.profile_id;
+      const profileSelect = "id, full_name, role, learner_mode, grade, target_exam, daily_goal_minutes, weekly_target_cards";
+      const cardSelect = "id, prompt_style, prompt, answer, current_interval_days, ease, streak, last_reviewed_at, next_review_at, exam_priority, concepts!inner(concept_text, learning_entries!inner(id, title, subject, profile_id)), card_tags(tag)";
+
+      try {
+        if (cachedProfileId) {
+          // Blazing fast parallel fetch!
+          const [profileRes, subjectRes, entryRes, cardRes] = await Promise.all([
+            supabase.from("profiles").select(profileSelect).eq("id", cachedProfileId).maybeSingle(),
+            supabase.from("subjects").select("id, name, accent, focus").eq("profile_id", cachedProfileId).order("created_at", { ascending: true }),
+            supabase.from("learning_entries").select("id, profile_id, title, subject, created_at, summary, source_type, concepts(concept_text)").eq("profile_id", cachedProfileId).order("created_at", { ascending: false }).limit(6),
+            supabase.from("cards").select(cardSelect).eq("concepts.learning_entries.profile_id", cachedProfileId).order("next_review_at", { ascending: true }).limit(8)
+          ]);
+
+          if (profileRes.error) throw profileRes.error;
+          if (subjectRes.error) throw subjectRes.error;
+          if (entryRes.error) throw entryRes.error;
+          if (cardRes.error) throw cardRes.error;
+
+          profileRow = profileRes.data;
+          subjectRows = (subjectRes.data ?? []) as unknown as SubjectRow[];
+          entryRows = (entryRes.data ?? []) as unknown as LearningEntryRow[];
+          cardRows = (cardRes.data ?? []) as unknown as ReviewCardRow[];
+        } else {
+          // Slower fallback for old sessions
+          const { data: pRow, error: pError } = await supabase.from("profiles").select(profileSelect).eq("auth_user_id", currentUser.id).maybeSingle();
+          if (pError) throw pError;
+          profileRow = pRow;
+
+          if (profileRow) {
+            const [subjectRes, entryRes, cardRes] = await Promise.all([
+              supabase.from("subjects").select("id, name, accent, focus").eq("profile_id", profileRow.id).order("created_at", { ascending: true }),
+              supabase.from("learning_entries").select("id, profile_id, title, subject, created_at, summary, source_type, concepts(concept_text)").eq("profile_id", profileRow.id).order("created_at", { ascending: false }).limit(6),
+              supabase.from("cards").select(cardSelect).eq("concepts.learning_entries.profile_id", profileRow.id).order("next_review_at", { ascending: true }).limit(8)
+            ]);
+
+            if (subjectRes.error) throw subjectRes.error;
+            if (entryRes.error) throw entryRes.error;
+            if (cardRes.error) throw cardRes.error;
+
+            subjectRows = (subjectRes.data ?? []) as unknown as SubjectRow[];
+            entryRows = (entryRes.data ?? []) as unknown as LearningEntryRow[];
+            cardRows = (cardRes.data ?? []) as unknown as ReviewCardRow[];
+          }
+        }
+      } catch (err: any) {
         setState("error");
-        setError(profileError.message);
+        setError(err.message || "Dashboard data load nahi ho paaya.");
         return;
       }
-
-      const profileRow = rawProfileRow as ProfileRow | null;
 
       if (!profileRow) {
         setState("needs_profile");
         return;
       }
 
-      const [
-        { data: rawSubjectRows, error: subjectError },
-        { data: rawEntryRows, error: entryError },
-        { data: rawCardRows, error: cardError },
-      ] = await Promise.all([
-        supabase
-          .from("subjects")
-          .select("id, name, accent, focus")
-          .eq("profile_id", profileRow.id)
-          .order("created_at", { ascending: true }),
-        supabase
-          .from("learning_entries")
-          .select(
-            "id, profile_id, title, subject, created_at, summary, source_type, concepts(concept_text)",
-          )
-          .eq("profile_id", profileRow.id)
-          .order("created_at", { ascending: false })
-          .limit(6),
-        supabase
-          .from("cards")
-          .select(
-            "id, prompt_style, prompt, answer, current_interval_days, ease, streak, last_reviewed_at, next_review_at, exam_priority, concepts(concept_text, learning_entries(id, title, subject, profile_id)), card_tags(tag)",
-          )
-          .order("next_review_at", { ascending: true })
-          .limit(8),
-      ]);
-
-      if (subjectError || entryError || cardError) {
-        setState("error");
-        setError(subjectError?.message || entryError?.message || cardError?.message || "Dashboard data load nahi ho paaya.");
-        return;
-      }
-
-      const subjectRows = (rawSubjectRows ?? []) as unknown as SubjectRow[];
-      const entryRows = (rawEntryRows ?? []) as unknown as LearningEntryRow[];
-      const cardRows = (rawCardRows ?? []) as unknown as ReviewCardRow[];
-
       const mappedEntries = entryRows.map((entry) => mapLearningEntryRow(entry));
       const mappedCards = cardRows.map((card) => mapCardRowToConceptCard(card));
-      const filteredCards = mappedCards.filter(
-        (card) => card.profileId === profileRow.id,
-      );
+      // No need to manually filter cards anymore, DB did it!
       const nextStats = buildDashboardStats({
         totalEntries: mappedEntries.length,
-        cards: filteredCards,
+        cards: mappedCards,
       });
-      const nextWeakTopics = buildWeakTopics(filteredCards);
+      const nextWeakTopics = buildWeakTopics(mappedCards);
 
       setProfile(
-        mapProfileRowToProfile(profileRow, subjectRows.map(mapSubjectRow)),
+        mapProfileRowToProfile(profileRow as ProfileRow, subjectRows.map(mapSubjectRow)),
       );
       setEntries(mappedEntries);
-      setCards(filteredCards);
+      setCards(mappedCards);
       setStats(nextStats);
       setWeakTopics(nextWeakTopics);
+      
+      document.body.className = profileRow.learner_mode === "neet" ? "theme-neet" : "";
+      
       setState("ready");
     }
 

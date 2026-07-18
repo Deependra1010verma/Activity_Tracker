@@ -13,8 +13,6 @@ export function AuthControls({ email }: AuthControlsProps) {
   async function handleSignOut() {
     localStorage.removeItem("mock_auth_session");
     
-    // Slight delay before redirecting helps UI transitions
-    await new Promise(resolve => setTimeout(resolve, 50));
     router.push("/auth");
     router.refresh();
   }

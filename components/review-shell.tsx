@@ -11,6 +11,7 @@ import { ConceptCard, Profile } from "@/lib/types";
 type AuthUser = {
   id: string;
   email?: string | null;
+  profile_id?: string | null;
 };
 
 type ProfileRow = {
@@ -72,61 +73,68 @@ export function ReviewShell() {
         return;
       }
 
-      setUser({ id: currentUser.id, email: currentUser.email });
+      setUser({ id: currentUser.id, email: currentUser.email, profile_id: currentUser.profile_id });
 
-      const { data: rawProfileRow, error: profileError } = await supabase
-        .from("profiles")
-        .select(
-          "id, full_name, role, learner_mode, grade, target_exam, daily_goal_minutes, weekly_target_cards",
-        )
-        .eq("auth_user_id", currentUser.id)
-        .maybeSingle();
+      let profileRow = null;
+      let subjectRows: SubjectRow[] = [];
+      let cardRows: ReviewCardRow[] = [];
 
-      if (profileError) {
+      const cachedProfileId = currentUser.profile_id;
+      const profileSelect = "id, full_name, role, learner_mode, grade, target_exam, daily_goal_minutes, weekly_target_cards";
+      const cardSelect = "id, prompt_style, prompt, answer, current_interval_days, ease, streak, last_reviewed_at, next_review_at, exam_priority, concepts!inner(concept_text, learning_entries!inner(id, title, subject, profile_id)), card_tags(tag)";
+      const nowIso = new Date().toISOString();
+
+      try {
+        if (cachedProfileId) {
+          const [profileRes, subjectRes, cardRes] = await Promise.all([
+            supabase.from("profiles").select(profileSelect).eq("id", cachedProfileId).maybeSingle(),
+            supabase.from("subjects").select("id, name, accent, focus").eq("profile_id", cachedProfileId).order("created_at", { ascending: true }),
+            supabase.from("cards").select(cardSelect).eq("concepts.learning_entries.profile_id", cachedProfileId).lte("next_review_at", nowIso).order("next_review_at", { ascending: true })
+          ]);
+
+          if (profileRes.error) throw profileRes.error;
+          if (subjectRes.error) throw subjectRes.error;
+          if (cardRes.error) throw cardRes.error;
+
+          profileRow = profileRes.data;
+          subjectRows = (subjectRes.data ?? []) as unknown as SubjectRow[];
+          cardRows = (cardRes.data ?? []) as unknown as ReviewCardRow[];
+        } else {
+          const { data: pRow, error: pError } = await supabase.from("profiles").select(profileSelect).eq("auth_user_id", currentUser.id).maybeSingle();
+          if (pError) throw pError;
+          profileRow = pRow;
+
+          if (profileRow) {
+            const [subjectRes, cardRes] = await Promise.all([
+              supabase.from("subjects").select("id, name, accent, focus").eq("profile_id", profileRow.id).order("created_at", { ascending: true }),
+              supabase.from("cards").select(cardSelect).eq("concepts.learning_entries.profile_id", profileRow.id).lte("next_review_at", nowIso).order("next_review_at", { ascending: true })
+            ]);
+
+            if (subjectRes.error) throw subjectRes.error;
+            if (cardRes.error) throw cardRes.error;
+
+            subjectRows = (subjectRes.data ?? []) as unknown as SubjectRow[];
+            cardRows = (cardRes.data ?? []) as unknown as ReviewCardRow[];
+          }
+        }
+      } catch (err: any) {
         setState("error");
-        setError(profileError.message);
+        setError(err.message || "Review data load nahi ho paaya.");
         return;
       }
-
-      const profileRow = rawProfileRow as ProfileRow | null;
 
       if (!profileRow) {
         setState("needs_profile");
         return;
       }
 
-      const nowIso = new Date().toISOString();
-      const [
-        { data: rawSubjectRows, error: subjectError },
-        { data: rawCardRows, error: cardError },
-      ] = await Promise.all([
-        supabase
-          .from("subjects")
-          .select("id, name, accent, focus")
-          .eq("profile_id", profileRow.id)
-          .order("created_at", { ascending: true }),
-        supabase
-          .from("cards")
-          .select(
-            "id, prompt_style, prompt, answer, current_interval_days, ease, streak, last_reviewed_at, next_review_at, exam_priority, concepts(concept_text, learning_entries(id, title, subject, profile_id)), card_tags(tag)",
-          )
-          .lte("next_review_at", nowIso)
-          .order("next_review_at", { ascending: true }),
-      ]);
-
-      if (subjectError || cardError) {
-        setState("error");
-        setError(subjectError?.message || cardError?.message || "Review data load nahi ho paaya.");
-        return;
-      }
-
-      const subjectRows = (rawSubjectRows ?? []) as unknown as SubjectRow[];
-      const cardRows = (rawCardRows ?? []) as unknown as ReviewCardRow[];
-
       setProfile(
-        mapProfileRowToProfile(profileRow, subjectRows.map(mapSubjectRow)),
+        mapProfileRowToProfile(profileRow as ProfileRow, subjectRows.map(mapSubjectRow)),
       );
       setCards(cardRows.map((card) => mapCardRowToConceptCard(card)));
+      
+      document.body.className = profileRow.learner_mode === "neet" ? "theme-neet" : "";
+      
       setState("ready");
     }
 

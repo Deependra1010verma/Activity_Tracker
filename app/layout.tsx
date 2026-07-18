@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Nunito } from "next/font/google";
 import "./globals.css";
+
+const nunito = Nunito({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Recall Ledger",
@@ -14,7 +17,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>
+      <body className={nunito.className}>
         <div className="page-shell">
           <header className="topbar">
             <Link href="/" className="brand-mark">
