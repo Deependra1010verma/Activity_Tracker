@@ -40,5 +40,51 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid username or password." }, { status: 401 });
   }
 
-  return NextResponse.json({ account });
+  // Fetch profile to cache profile_id and learner_mode
+  let profileId = null;
+  let learnerMode = null;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (supabaseUrl && supabaseAnonKey) {
+    try {
+      const { createClient } = require('@supabase/supabase-js');
+      const supabase = createClient(supabaseUrl, supabaseAnonKey);
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("id, learner_mode")
+        .eq("auth_user_id", account.authUserId)
+        .maybeSingle();
+
+      if (profile) {
+        profileId = profile.id;
+        learnerMode = profile.learner_mode;
+      }
+    } catch (e) {
+      console.error("Failed to fetch profile during SSR login", e);
+    }
+  }
+
+  const mockSession = {
+    user: {
+      id: account.authUserId,
+      email: account.email,
+      user_metadata: {
+        full_name: account.fullName,
+      },
+      profile_id: profileId,
+      learner_mode: learnerMode,
+    },
+  };
+
+  const response = NextResponse.json({ account, mockSession });
+  
+  response.cookies.set("mock_auth_session", JSON.stringify(mockSession), {
+    path: "/",
+    httpOnly: false, // Accessible to JS if needed, but primarily for server reading
+    maxAge: 60 * 60 * 24 * 30, // 30 days
+    sameSite: "lax",
+  });
+
+  return response;
 }

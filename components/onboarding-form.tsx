@@ -57,15 +57,18 @@ export function OnboardingForm() {
         return;
       }
 
-      const sessionStr = localStorage.getItem("mock_auth_session");
       let currentUser = null;
-      if (sessionStr) {
-        try {
+      try {
+        const cookieStr = document.cookie
+          .split("; ")
+          .find((row) => row.startsWith("mock_auth_session="));
+        if (cookieStr) {
+          const sessionStr = decodeURIComponent(cookieStr.split("=")[1]);
           const session = JSON.parse(sessionStr);
           currentUser = session?.user;
-        } catch (e) {
-          console.error("Invalid mock session", e);
         }
+      } catch (e) {
+        console.error("Invalid mock session in cookie", e);
       }
 
       if (currentUser) {
@@ -213,10 +216,27 @@ export function OnboardingForm() {
         throw subjectError;
       }
 
+      try {
+        const cookieStr = document.cookie
+          .split("; ")
+          .find((row) => row.startsWith("mock_auth_session="));
+        if (cookieStr) {
+          const session = JSON.parse(decodeURIComponent(cookieStr.split("=")[1]));
+          if (session && session.user) {
+            session.user.profile_id = profileId;
+            session.user.learner_mode = learnerMode;
+            document.cookie = `mock_auth_session=${encodeURIComponent(JSON.stringify(session))}; path=/; max-age=2592000; SameSite=Lax`;
+          }
+        }
+      } catch (e) {
+        console.error("Failed to update cookie after onboarding", e);
+      }
+
       setMessage(
         "Profile save ho gayi. Dashboard ab isi DB profile ko read karega.",
       );
       router.push("/");
+      router.refresh();
     } catch (submissionError) {
       const nextError =
         submissionError instanceof Error

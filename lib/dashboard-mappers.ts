@@ -1,7 +1,7 @@
 import { DashboardStats, LearningEntry, WeakTopic } from "@/lib/types";
 import { mapCardRowToConceptCard } from "@/lib/review-mappers";
 
-type LearningEntryRow = {
+export type LearningEntryRow = {
   id: string;
   profile_id: string;
   title: string;

@@ -12,6 +12,7 @@ export function AuthControls({ email }: AuthControlsProps) {
 
   async function handleSignOut() {
     localStorage.removeItem("mock_auth_session");
+    document.cookie = "mock_auth_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     
     router.push("/auth");
     router.refresh();

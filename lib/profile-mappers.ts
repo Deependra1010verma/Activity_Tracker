@@ -1,7 +1,7 @@
 import { getTaglineForMode } from "@/lib/subject-presets";
 import { LearnerMode, LearnerRole, Profile, SubjectPreset } from "@/lib/types";
 
-type ProfileRow = {
+export type ProfileRow = {
   id: string;
   full_name: string;
   role: LearnerRole;
@@ -12,7 +12,7 @@ type ProfileRow = {
   weekly_target_cards: number;
 };
 
-type SubjectRow = {
+export type SubjectRow = {
   id: string;
   name: string;
   accent: string | null;

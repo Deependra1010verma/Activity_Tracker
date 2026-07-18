@@ -54,40 +54,6 @@ export function AuthForm() {
         throw new Error(payload.error ?? "Invalid username or password.");
       }
 
-      const starterAccount = payload.account;
-      let profileId = null;
-      let learnerMode = null;
-
-      try {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("id, learner_mode")
-          .eq("auth_user_id", starterAccount.authUserId)
-          .maybeSingle();
-        
-        if (profile) {
-          profileId = profile.id;
-          learnerMode = profile.learner_mode;
-        }
-      } catch (e) {
-        console.error("Failed to fetch profile during login", e);
-      }
-
-      // Bypass Supabase Auth completely and use a local session mock
-      const mockSession = {
-        user: {
-          id: starterAccount.authUserId,
-          email: starterAccount.email,
-          user_metadata: {
-            full_name: starterAccount.fullName,
-          },
-          profile_id: profileId,
-          learner_mode: learnerMode
-        }
-      };
-      
-      localStorage.setItem("mock_auth_session", JSON.stringify(mockSession));
-
       setMessage("Welcome back! ✨");
       router.push("/");
       router.refresh();
