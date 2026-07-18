@@ -44,8 +44,61 @@ export function LearnFormView({ profile, editEntry }: LearnFormViewProps) {
   const [notes, setNotes] = useState(editEntry?.summary ?? "");
   const [concepts, setConcepts] = useState(editEntry?.concepts?.join("\n") ?? "");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+
+  async function handleGenerateAI() {
+    setError("");
+    setMessage("");
+    if (!topic.trim() || !notes.trim()) {
+      setError("Please fill out the Topic and Your Notes first so AI knows what to generate!");
+      return;
+    }
+    
+    setIsGeneratingAI(true);
+    try {
+      const response = await fetch("/api/generate-cards", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ summary: notes, topic, learnerMode: profile.learnerMode })
+      });
+      
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "AI generation failed");
+      
+      setConcepts(data.concepts.join("\n"));
+      setMessage("AI successfully extracted concepts! You can review them below.");
+    } catch (err: any) {
+      setError(err.message || "Failed to connect to AI");
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!editEntry || !confirm("Are you sure you want to delete this note and all its flashcards?")) return;
+    
+    setIsDeleting(true);
+    try {
+      const supabase = getSupabaseBrowserClient();
+      if (!supabase) throw new Error("Could not connect to database.");
+      
+      const { error: delError } = await supabase
+        .from("learning_entries")
+        .delete()
+        .eq("id", editEntry.id);
+        
+      if (delError) throw delError;
+      
+      router.push("/");
+      router.refresh();
+    } catch (err: any) {
+      setError(err.message || "Failed to delete note.");
+      setIsDeleting(false);
+    }
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -76,6 +129,25 @@ export function LearnFormView({ profile, editEntry }: LearnFormViewProps) {
     setIsSubmitting(true);
 
     try {
+      if (editEntry) {
+        // UPDATE EXISTING ENTRY
+        const { error: updateError } = await supabase
+          .from("learning_entries")
+          .update({
+            title: topic.trim(),
+            summary: notes.trim(),
+            source_notes: notes.trim(),
+          })
+          .eq("id", editEntry.id);
+
+        if (updateError) throw updateError;
+        setMessage("Note updated successfully!");
+        router.push("/");
+        router.refresh();
+        return;
+      }
+
+      // CREATE NEW ENTRY
       const { data: rawSubjectRow, error: subjectError } = await supabase
         .from("subjects")
         .select("id")
@@ -214,7 +286,19 @@ export function LearnFormView({ profile, editEntry }: LearnFormViewProps) {
           </div>
 
           <div className="cute-field">
-            <label htmlFor="concepts">Key Atomic Concepts (One per line)</label>
+            <label htmlFor="concepts">
+              Key Atomic Concepts (One per line)
+              {!editEntry && (
+                <button 
+                  type="button" 
+                  onClick={handleGenerateAI}
+                  disabled={isGeneratingAI}
+                  style={{ marginLeft: "1rem", background: "none", border: "1px solid var(--primary)", color: "var(--primary)", borderRadius: "var(--radius-pill)", padding: "0.25rem 0.75rem", fontSize: "0.8rem", cursor: "pointer", fontWeight: "bold" }}
+                >
+                  {isGeneratingAI ? "Generating..." : "✨ Generate with AI"}
+                </button>
+              )}
+            </label>
             <textarea
               id="concepts"
               name="concepts"
@@ -226,12 +310,32 @@ export function LearnFormView({ profile, editEntry }: LearnFormViewProps) {
                   : "1. Mitochondria is the powerhouse of the cell\n2. Ribosomes synthesize proteins"
               }
               value={concepts}
+              readOnly={!!editEntry}
+              style={{ opacity: editEntry ? 0.7 : 1 }}
             />
+            {editEntry && (
+              <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", margin: "0.25rem 0 0" }}>
+                * Atomic concepts and flashcards are locked in edit mode to preserve your spaced-repetition history.
+              </p>
+            )}
           </div>
 
-          <button className="btn-primary" disabled={isSubmitting} type="submit" style={{ marginTop: "1rem" }}>
-            {isSubmitting ? "Saving Magic..." : editEntry ? "Save Updates" : "Save Learning"}
-          </button>
+          <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
+            <button className="btn-primary" disabled={isSubmitting} type="submit" style={{ flex: 1 }}>
+              {isSubmitting ? "Saving Magic..." : editEntry ? "Save Updates" : "Save Learning"}
+            </button>
+            {editEntry && (
+              <button 
+                type="button" 
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="btn-primary" 
+                style={{ flex: 1, background: "transparent", border: "2px solid var(--again)", color: "var(--again)", boxShadow: "none" }}
+              >
+                {isDeleting ? "Deleting..." : "Delete Note"}
+              </button>
+            )}
+          </div>
         </form>
 
         {message ? (

@@ -1,0 +1,17 @@
+{
+  "name": "Memory Magic App",
+  "short_name": "MemoryMagic",
+  "description": "Your personal spaced-repetition learning tracker.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ec4899",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

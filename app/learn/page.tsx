@@ -46,7 +46,7 @@ export default async function LearnPage({ searchParams }: LearnPageProps) {
   const profileSelect = "id, full_name, role, learner_mode, grade, target_exam, daily_goal_minutes, weekly_target_cards";
 
   if (cachedProfileId) {
-    const promises: Promise<any>[] = [
+    const promises: any[] = [
       supabase.from("profiles").select(profileSelect).eq("id", cachedProfileId).maybeSingle(),
       supabase.from("subjects").select("id, name, accent, focus").eq("profile_id", cachedProfileId).order("created_at", { ascending: true })
     ];
