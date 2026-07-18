@@ -245,11 +245,8 @@ export function HomeShell() {
       </div>
       <AuthControls email={user?.email} />
       <DashboardView
-        cards={cards}
-        entries={entries}
         profile={profile}
         stats={stats}
-        weakTopics={weakTopics}
       />
     </>
   );

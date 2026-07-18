@@ -20,9 +20,9 @@ export function AuthControls({ email }: AuthControlsProps) {
   }
 
   return (
-    <div className="chips" style={{ marginBottom: "1rem" }}>
-      {email ? <span className="chip">{email}</span> : null}
-      <button className="secondary-button" onClick={() => void handleSignOut()} type="button">
+    <div style={{ position: "absolute", top: "1rem", right: "2rem", zIndex: 100 }} className="auth-controls">
+      {email ? <span className="user-email">{email}</span> : null}
+      <button className="btn-logout" onClick={() => void handleSignOut()} type="button">
         Logout
       </button>
     </div>

@@ -3,7 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { generateCardsForConcept } from "@/lib/card-generator";
-import { learnerModeCopy, learnerModeLabels } from "@/lib/profile-copy";
+import { learnerModeCopy } from "@/lib/profile-copy";
 import { getSupabaseBrowserClient, hasSupabaseEnv } from "@/lib/supabase";
 import { Profile } from "@/lib/types";
 
@@ -14,16 +14,13 @@ type LearnFormViewProps = {
 type SubjectIdRow = {
   id: string;
 };
-
 type EntryIdRow = {
   id: string;
 };
-
 type ConceptInsertRow = {
   id: string;
   concept_text: string;
 };
-
 type CardIdRow = {
   id: string;
 };
@@ -49,14 +46,13 @@ export function LearnFormView({ profile }: LearnFormViewProps) {
     setError("");
 
     if (!hasSupabaseEnv()) {
-      setError("Supabase env values missing hain. `.env` verify karo.");
+      setError("Database is not configured properly.");
       return;
     }
 
     const supabase = getSupabaseBrowserClient();
-
     if (!supabase) {
-      setError("Supabase client initialize nahi ho paaya.");
+      setError("Could not connect to database.");
       return;
     }
 
@@ -66,7 +62,7 @@ export function LearnFormView({ profile }: LearnFormViewProps) {
       .filter(Boolean);
 
     if (!topic.trim() || !notes.trim() || parsedConcepts.length === 0) {
-      setError("Topic, notes, aur kam se kam 1 concept required hai.");
+      setError("Please fill out the topic, your notes, and at least 1 key concept!");
       return;
     }
 
@@ -80,9 +76,7 @@ export function LearnFormView({ profile }: LearnFormViewProps) {
         .eq("name", subject)
         .maybeSingle();
 
-      if (subjectError) {
-        throw subjectError;
-      }
+      if (subjectError) throw subjectError;
 
       const subjectRow = rawSubjectRow as SubjectIdRow | null;
 
@@ -100,9 +94,7 @@ export function LearnFormView({ profile }: LearnFormViewProps) {
         .select("id")
         .single();
 
-      if (entryError) {
-        throw entryError;
-      }
+      if (entryError) throw entryError;
 
       const entry = rawEntry as EntryIdRow;
 
@@ -116,9 +108,7 @@ export function LearnFormView({ profile }: LearnFormViewProps) {
         )
         .select("id, concept_text");
 
-      if (conceptError) {
-        throw conceptError;
-      }
+      if (conceptError) throw conceptError;
 
       const conceptRows = (rawConceptRows ?? []) as ConceptInsertRow[];
 
@@ -148,12 +138,9 @@ export function LearnFormView({ profile }: LearnFormViewProps) {
         .insert(cardPayload)
         .select("id");
 
-      if (cardError) {
-        throw cardError;
-      }
+      if (cardError) throw cardError;
 
       const createdCards = (rawCreatedCards ?? []) as CardIdRow[];
-
       const tagPayload =
         createdCards?.flatMap((card, index) =>
           generatedCards[index].tags.map((tag) => ({
@@ -164,142 +151,79 @@ export function LearnFormView({ profile }: LearnFormViewProps) {
 
       if (tagPayload.length > 0) {
         const { error: tagError } = await supabase.from("card_tags").insert(tagPayload);
-
-        if (tagError) {
-          throw tagError;
-        }
+        if (tagError) throw tagError;
       }
 
-      setMessage(
-        `Learning saved. ${parsedConcepts.length} concepts aur ${cardPayload.length} starter cards create ho gaye.`,
-      );
+      setMessage(`Yay! 🎉 Saved successfully. We'll remind you about this soon.`);
       setTopic("");
       setNotes("");
       setConcepts("");
       router.refresh();
     } catch (submissionError) {
-      const nextError =
-        submissionError instanceof Error
-          ? submissionError.message
-          : "Unexpected save error aaya.";
-      setError(nextError);
+      setError(submissionError instanceof Error ? submissionError.message : "Something went wrong!");
     } finally {
       setIsSubmitting(false);
     }
   }
 
   return (
-    <section className="grid-two">
-      <div className="section-panel">
-        <span className="eyebrow">{learnerModeLabels[profile.learnerMode]}</span>
-        <h2 className="section-title">Capture for {profile.fullName}</h2>
-        <p className="section-copy">
-          {modeCopy.hero} Final app me ye form current logged-in profile ke data me save
-          hoga, so tum dono ke cards aur schedules alag rahenge.
-        </p>
+    <div className="centered-page">
+      <div className="cute-card" style={{ maxWidth: "650px", width: "100%" }}>
+        <div style={{ textAlign: "center", marginBottom: "2rem" }}>
+          <h2 className="cute-title" style={{ fontSize: "2.2rem" }}>Log New Learning 🌸</h2>
+          <p className="cute-subtitle">What did you learn today? Let's make sure it sticks forever.</p>
+        </div>
 
-        <form className="capture-form" onSubmit={handleSubmit}>
-          <div className="field">
-            <label htmlFor="topic">
-              {profile.learnerMode === "general" ? "Topic title" : "Chapter or topic"}
-            </label>
+        <form className="cute-form" onSubmit={handleSubmit}>
+          <div className="cute-field">
+            <label htmlFor="topic">Topic Title</label>
             <input
               id="topic"
               name="topic"
+              className="cute-input"
               onChange={(event) => setTopic(event.target.value)}
-              placeholder={
-                profile.learnerMode === "general"
-                  ? "Example: Binary search fundamentals"
-                  : "Example: Cell organelles"
-              }
+              placeholder="e.g. Basics of Binary Search"
               value={topic}
             />
           </div>
 
-          {profile.learnerMode !== "general" ? (
-            <div className="field">
-              <label htmlFor="source">
-                {profile.learnerMode === "neet" ? "Source" : "Revision source"}
-              </label>
-              <select
-                id="source"
-                name="source"
-                onChange={(event) => setSourceType(event.target.value)}
-                value={sourceType}
-              >
-                <option>NCERT</option>
-                <option>Module</option>
-                <option>Class notes</option>
-                <option>Test mistake</option>
-              </select>
-            </div>
-          ) : null}
-
-          <div className="field">
-            <label htmlFor="notes">
-              {profile.learnerMode === "general"
-                ? "What did you learn?"
-                : "What did you revise?"}
-            </label>
+          <div className="cute-field">
+            <label htmlFor="notes">Your Notes</label>
             <textarea
               id="notes"
               name="notes"
+              className="cute-input"
               onChange={(event) => setNotes(event.target.value)}
-              placeholder={modeCopy.captureLabel}
+              placeholder="Summarize what you learned in your own words..."
               value={notes}
             />
           </div>
 
-          <div className="field">
-            <label htmlFor="concepts">
-              {profile.learnerMode === "neet"
-                ? "High-yield lines or facts"
-                : "Atomic concepts"}
-            </label>
+          <div className="cute-field">
+            <label htmlFor="concepts">Key Atomic Concepts (One per line)</label>
             <textarea
               id="concepts"
               name="concepts"
+              className="cute-input"
               onChange={(event) => setConcepts(event.target.value)}
-              placeholder={modeCopy.conceptsLabel}
+              placeholder="1. Binary search needs sorted array&#10;2. Time complexity is O(log n)"
               value={concepts}
             />
           </div>
 
-          <button className="primary-button" disabled={isSubmitting} type="submit">
-            {isSubmitting ? "Saving..." : `Save for ${profile.fullName}`}
+          <button className="btn-primary" disabled={isSubmitting} type="submit" style={{ marginTop: "1rem" }}>
+            {isSubmitting ? "Saving Magic..." : "Save Learning"}
           </button>
-
-          {message ? (
-            <p className="section-copy" style={{ color: "#166534", margin: 0 }}>
-              {message}
-            </p>
-          ) : null}
-
-          {error ? (
-            <p className="section-copy" style={{ color: "#b91c1c", margin: 0 }}>
-              {error}
-            </p>
-          ) : null}
         </form>
-      </div>
 
-      <div className="section-panel">
-        <span className="eyebrow">Question behavior</span>
-        <h3 className="section-title">Prompt variants for {profile.fullName}</h3>
-        <p className="section-copy">
-          Same database rahega, but prompts learner mode ke hisaab se generate honge.
-        </p>
-        <div className="template-grid">
-          {modeCopy.prompts.map((template) => (
-            <article className="template" key={template.title}>
-              <h4>{template.title}</h4>
-              <p className="section-copy" style={{ marginTop: "0.45rem" }}>
-                {template.copy}
-              </p>
-            </article>
-          ))}
-        </div>
+        {message ? (
+          <div className="msg-success" style={{ marginTop: "1.5rem" }}>{message}</div>
+        ) : null}
+
+        {error ? (
+          <div className="msg-error" style={{ marginTop: "1.5rem" }}>{error}</div>
+        ) : null}
       </div>
-    </section>
+    </div>
   );
 }

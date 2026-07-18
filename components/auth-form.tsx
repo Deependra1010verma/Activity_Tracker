@@ -69,7 +69,7 @@ export function AuthForm() {
       
       localStorage.setItem("mock_auth_session", JSON.stringify(mockSession));
 
-      setMessage("Login successful. Tumhara personal workspace open kar rahe hain.");
+      setMessage("Welcome back! ✨");
       router.push("/");
       router.refresh();
     } catch (submissionError) {
@@ -84,84 +84,50 @@ export function AuthForm() {
   }
 
   return (
-    <section className="grid-two">
-      <div className="section-panel auth-panel auth-panel-primary">
-        <span className="eyebrow">Memory studio</span>
-        <h2 className="headline auth-headline">Come back tomorrow and it still feels fresh.</h2>
-        <p className="section-copy auth-copy">
-          Har login ke baad tumhara khud ka calm, focused recall space khulega jahan
-          learning, review aur streaks neatly alag rahenge.
-        </p>
+    <div className="centered-page">
+      <div className="cute-card" style={{ maxWidth: "450px", width: "100%", textAlign: "center" }}>
+        <h2 className="cute-title" style={{ fontSize: "2.5rem" }}>Welcome ✨</h2>
+        <p className="cute-subtitle">Ready to learn something new today?</p>
 
-        <form className="capture-form" onSubmit={handleSubmit}>
-          <div className="field">
+        <form className="cute-form" onSubmit={handleSubmit}>
+          <div className="cute-field" style={{ textAlign: "left" }}>
             <label htmlFor="username">Username</label>
             <input
               id="username"
               name="username"
+              className="cute-input"
               onChange={(event) => setUsername(event.target.value)}
-              placeholder="Enter username"
+              placeholder="e.g. Deependra"
               value={username}
             />
           </div>
 
-          <div className="field">
+          <div className="cute-field" style={{ textAlign: "left" }}>
             <label htmlFor="password">Password</label>
             <input
               id="password"
               name="password"
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="Enter password"
               type="password"
+              className="cute-input"
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="••••••••"
               value={password}
             />
           </div>
 
-          <button className="primary-button" disabled={isSubmitting} type="submit">
-            {isSubmitting ? "Please wait..." : "Login"}
+          <button className="btn-primary" disabled={isSubmitting} type="submit" style={{ marginTop: "1rem" }}>
+            {isSubmitting ? "Logging in..." : "Login"}
           </button>
         </form>
 
         {message ? (
-          <p className="section-copy" style={{ color: "#166534", marginTop: "1rem" }}>
-            {message}
-          </p>
+          <div className="msg-success" style={{ marginTop: "1.5rem" }}>{message}</div>
         ) : null}
 
         {error ? (
-          <p className="section-copy" style={{ color: "#b91c1c", marginTop: "1rem" }}>
-            {error}
-          </p>
+          <div className="msg-error" style={{ marginTop: "1.5rem" }}>{error}</div>
         ) : null}
       </div>
-
-      <div className="section-panel auth-panel">
-        <span className="eyebrow">Why it feels better</span>
-        <h3 className="section-title">Simple, private, repeatable</h3>
-        <div className="stack">
-          <article className="list-card">
-            <h4>One login, one study world</h4>
-            <p className="section-copy" style={{ marginTop: "0.45rem" }}>
-              Har learner ka dashboard aur review queue independent rahega, isliye focus
-              tootega nahi.
-            </p>
-          </article>
-          <article className="list-card">
-            <h4>Gentle daily rhythm</h4>
-            <p className="section-copy" style={{ marginTop: "0.45rem" }}>
-              UI intentionally clean rakha gaya hai taaki tum bas aao, login karo, aur
-              recall loop me ghus jao.
-            </p>
-          </article>
-          <article className="list-card">
-            <h4>Built for repeat visits</h4>
-            <p className="section-copy" style={{ marginTop: "0.45rem" }}>
-              Soft visuals, focused cards aur clear actions website ko noisy nahi hone
-              dete.
-            </p>
-          </article>
-        </div>
-      </div>
-    </section>
+    </div>
   );
 }
