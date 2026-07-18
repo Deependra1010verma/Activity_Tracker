@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "clean": "rm -rf .next .next-dev tsconfig.tsbuildinfo",
+    "predev": "rm -rf .next-dev",
+    "dev": "next dev --port 3000",
+    "prebuild": "rm -rf .next",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

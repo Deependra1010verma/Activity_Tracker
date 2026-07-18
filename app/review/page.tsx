@@ -1,6 +1,7 @@
-import { ReviewBoardView } from "@/components/review-board";
+import { ReviewShell } from "@/components/review-shell";
+
+export const dynamic = "force-dynamic";
 
 export default function ReviewPage() {
-  return <ReviewBoardView />;
+  return <ReviewShell />;
 }
-

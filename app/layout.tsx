@@ -35,6 +35,15 @@ export default function RootLayout({
               <Link className="nav-pill" href="/review">
                 Review queue
               </Link>
+              <Link className="nav-pill" href="/auth">
+                Auth
+              </Link>
+              <Link className="nav-pill" href="/onboarding">
+                Onboarding
+              </Link>
+              <Link className="nav-pill" href="/setup">
+                Multi-user setup
+              </Link>
             </nav>
           </header>
           {children}
@@ -43,4 +52,3 @@ export default function RootLayout({
     </html>
   );
 }
-
