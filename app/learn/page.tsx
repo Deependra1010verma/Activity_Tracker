@@ -6,9 +6,15 @@ import { mapProfileRowToProfile, mapSubjectRow, ProfileRow, SubjectRow } from "@
 
 export const dynamic = "force-dynamic";
 
-export default async function LearnPage() {
+type LearnPageProps = {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+};
+
+export default async function LearnPage({ searchParams }: LearnPageProps) {
   const cookieStore = await cookies();
   const sessionStr = cookieStore.get("mock_auth_session")?.value;
+  const resolvedParams = await searchParams;
+  const entryId = resolvedParams.entryId as string | undefined;
 
   if (!sessionStr) {
     return <AuthForm />;
@@ -34,23 +40,63 @@ export default async function LearnPage() {
 
   let profileRow = null;
   let subjectRows: SubjectRow[] = [];
+  let editEntry = undefined;
 
   const cachedProfileId = currentUser.profile_id;
   const profileSelect = "id, full_name, role, learner_mode, grade, target_exam, daily_goal_minutes, weekly_target_cards";
 
   if (cachedProfileId) {
-    const [profileRes, subjectRes] = await Promise.all([
+    const promises: Promise<any>[] = [
       supabase.from("profiles").select(profileSelect).eq("id", cachedProfileId).maybeSingle(),
       supabase.from("subjects").select("id, name, accent, focus").eq("profile_id", cachedProfileId).order("created_at", { ascending: true })
-    ]);
-    profileRow = profileRes.data;
-    subjectRows = subjectRes.data as unknown as SubjectRow[] ?? [];
+    ];
+    
+    if (entryId) {
+      promises.push(
+        supabase.from("learning_entries")
+          .select("id, title, summary, concepts(concept_text)")
+          .eq("id", entryId)
+          .eq("profile_id", cachedProfileId)
+          .maybeSingle()
+      );
+    }
+    
+    const results = await Promise.all(promises);
+    profileRow = results[0].data;
+    subjectRows = results[1].data as unknown as SubjectRow[] ?? [];
+    
+    if (entryId && results[2]?.data) {
+      const entryData = results[2].data;
+      editEntry = {
+        id: entryData.id,
+        title: entryData.title,
+        summary: entryData.summary,
+        concepts: entryData.concepts?.map((c: any) => c.concept_text) ?? []
+      };
+    }
   } else {
     const { data: pRow } = await supabase.from("profiles").select(profileSelect).eq("auth_user_id", currentUser.id).maybeSingle();
     profileRow = pRow;
     if (profileRow) {
       const { data: sRows } = await supabase.from("subjects").select("id, name, accent, focus").eq("profile_id", profileRow.id).order("created_at", { ascending: true });
       subjectRows = sRows as unknown as SubjectRow[] ?? [];
+      
+      if (entryId) {
+        const { data: entryData } = await supabase.from("learning_entries")
+          .select("id, title, summary, concepts(concept_text)")
+          .eq("id", entryId)
+          .eq("profile_id", profileRow.id)
+          .maybeSingle();
+          
+        if (entryData) {
+          editEntry = {
+            id: entryData.id,
+            title: entryData.title,
+            summary: entryData.summary,
+            concepts: entryData.concepts?.map((c: any) => c.concept_text) ?? []
+          };
+        }
+      }
     }
   }
 
@@ -60,5 +106,5 @@ export default async function LearnPage() {
 
   const profile = mapProfileRowToProfile(profileRow as any, subjectRows.map(mapSubjectRow));
 
-  return <LearnShell profile={profile} userEmail={currentUser.email} />;
+  return <LearnShell profile={profile} userEmail={currentUser.email} editEntry={editEntry} />;
 }

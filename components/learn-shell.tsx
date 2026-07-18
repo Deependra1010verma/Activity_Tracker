@@ -37,9 +37,15 @@ type LearnShellProps = {
   profile?: Profile;
   userEmail?: string | null;
   needsProfile?: boolean;
+  editEntry?: {
+    id: string;
+    title: string;
+    summary: string;
+    concepts: string[];
+  };
 };
 
-export function LearnShell({ profile, userEmail, needsProfile }: LearnShellProps) {
+export function LearnShell({ profile, userEmail, needsProfile, editEntry }: LearnShellProps) {
   useEffect(() => {
     if (profile?.learnerMode) {
       document.body.className = profile.learnerMode === "neet" ? "theme-neet" : "";
@@ -70,5 +76,5 @@ export function LearnShell({ profile, userEmail, needsProfile }: LearnShellProps
     );
   }
 
-  return <LearnFormView profile={profile} />;
+  return <LearnFormView profile={profile} editEntry={editEntry} />;
 }

@@ -20,23 +20,27 @@ export function DashboardView({ profile, stats, entries = [] }: DashboardViewPro
     <div style={{ display: "flex", flexDirection: "column", gap: "2rem", width: "100%", maxWidth: "800px", margin: "0 auto" }}>
       <div className="cute-card" style={{ width: "100%", textAlign: "center" }}>
         <h2 className="cute-title">
-          {greeting}, {profile.fullName.split(" ")[0]}! {profile.learnerMode === "neet" ? "🌸" : "⚡"}
+          {greeting}, {profile.fullName.split(" ")[0]}! {profile.learnerMode === "neet" ? "🐼🎀✨" : "⚡"}
         </h2>
         <p className="cute-subtitle">
           {stats.dueToday > 0
-            ? `You have ${stats.dueToday} things to remember today. Let's make them stick forever!`
-            : "You're all caught up for today! Learn something new?"}
+            ? profile.learnerMode === "neet" 
+              ? `You have ${stats.dueToday} cute things to revise today! Let's do this! 🌸` 
+              : `You have ${stats.dueToday} things to remember today. Let's make them stick forever!`
+            : profile.learnerMode === "neet"
+              ? "You're all caught up! Time to learn something totally new! 💖"
+              : "You're all caught up for today! Learn something new?"}
         </p>
 
         <div className="metrics" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", margin: "2rem 0" }}>
           <div className="metric" style={{ background: "rgba(236, 72, 153, 0.05)", borderColor: "rgba(236, 72, 153, 0.1)", borderRadius: "var(--radius-lg)", padding: "1.5rem" }}>
-            <p className="metric-label" style={{ color: "var(--primary)", fontWeight: 800, margin: 0 }}>Active Memories</p>
+            <p className="metric-label" style={{ color: "var(--primary)", fontWeight: 800, margin: 0 }}>Active Memories {profile.learnerMode === "neet" ? "🧠✨" : ""}</p>
             <p className="metric-value" style={{ color: "var(--primary)", fontSize: "2.5rem", fontWeight: 900, margin: "0.5rem 0 0" }}>{stats.activeCards}</p>
           </div>
           
           <div className="metric" style={{ background: "rgba(139, 92, 246, 0.05)", borderColor: "rgba(139, 92, 246, 0.1)", borderRadius: "var(--radius-lg)", padding: "1.5rem", textAlign: "left" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-              <p className="metric-label" style={{ color: "var(--secondary)", fontWeight: 800, margin: 0 }}>Retention</p>
+              <p className="metric-label" style={{ color: "var(--secondary)", fontWeight: 800, margin: 0 }}>Retention {profile.learnerMode === "neet" ? "📈🐼" : ""}</p>
               <span style={{ color: "var(--secondary)", fontWeight: 900, fontSize: "1.2rem" }}>{stats.retentionScore}%</span>
             </div>
             <div className="progress-bar-container">
@@ -47,13 +51,13 @@ export function DashboardView({ profile, stats, entries = [] }: DashboardViewPro
 
         <div className="cta-buttons-container">
           <Link href={`/learn?profile=${profile.id}`} className="cta-btn capture">
-            <span className="cta-icon">✨</span>
+            <span className="cta-icon">{profile.learnerMode === "neet" ? "📝🐼" : "✨"}</span>
             <h3 className="cta-title">Log New Learning</h3>
             <p className="cta-desc">Jho aaj padha, use yahan save karo</p>
           </Link>
 
           <Link href={`/review?profile=${profile.id}`} className="cta-btn review">
-            <span className="cta-icon">🧠</span>
+            <span className="cta-icon">{profile.learnerMode === "neet" ? "🔍💖" : "🧠"}</span>
             <h3 className="cta-title">Start Revision</h3>
             <p className="cta-desc">Revise karke memory permanent banao</p>
           </Link>
@@ -62,7 +66,7 @@ export function DashboardView({ profile, stats, entries = [] }: DashboardViewPro
 
       <div className="glass-panel">
         <div className="section-header">
-          <h3>Your Recent Notes</h3>
+          <h3>Your Recent Notes {profile.learnerMode === "neet" ? "🎀🐼" : ""}</h3>
           {entries.length > 0 && (
             <span style={{ fontSize: "0.9rem", color: "var(--text-muted)", fontWeight: 600 }}>{entries.length} recent</span>
           )}
@@ -70,25 +74,27 @@ export function DashboardView({ profile, stats, entries = [] }: DashboardViewPro
 
         {entries.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">📝</div>
+            <div className="empty-icon">{profile.learnerMode === "neet" ? "💤🐼" : "📝"}</div>
             <h4 style={{ margin: "0 0 0.5rem", fontSize: "1.2rem", fontWeight: 800 }}>No notes yet</h4>
             <p style={{ margin: 0, color: "var(--text-muted)" }}>Click "Log New Learning" to add your first note!</p>
           </div>
         ) : (
           <div className="note-grid">
             {entries.map((entry) => (
-              <div key={entry.id} className="note-card">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.5rem" }}>
-                  <h4 className="note-title" title={entry.title}>{entry.title}</h4>
+              <Link key={entry.id} href={`/learn?entryId=${entry.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                <div className="note-card" style={{ height: "100%" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.5rem" }}>
+                    <h4 className="note-title" title={entry.title}>{entry.title}</h4>
+                  </div>
+                  <p className="note-summary">{entry.summary}</p>
+                  <div className="note-footer">
+                    <span className="badge">{entry.subject}</span>
+                    <span className="note-date">
+                      {new Date(entry.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                    </span>
+                  </div>
                 </div>
-                <p className="note-summary">{entry.summary}</p>
-                <div className="note-footer">
-                  <span className="badge">{entry.subject}</span>
-                  <span className="note-date">
-                    {new Date(entry.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                  </span>
-                </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}

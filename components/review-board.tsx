@@ -144,6 +144,10 @@ export function ReviewBoardView({ cards, profile }: ReviewBoardViewProps) {
     <div className="centered-page">
       <div style={{ maxWidth: "700px", width: "100%", position: "relative" }}>
         
+        <Link href="/" className="btn-back" style={{ top: "-3rem" }}>
+          ← Back to Dashboard
+        </Link>
+        
         {/* Progress indicator */}
         <div style={{ textAlign: "center", marginBottom: "1rem", color: "var(--text-muted)", fontWeight: "800" }}>
           {dueCards.length} cards remaining today

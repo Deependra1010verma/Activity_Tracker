@@ -291,7 +291,7 @@ export function OnboardingForm() {
               id="fullName"
               name="fullName"
               onChange={(event) => setFullName(event.target.value)}
-              placeholder="Example: Deependra"
+              placeholder="Username"
               value={fullName}
             />
           </div>

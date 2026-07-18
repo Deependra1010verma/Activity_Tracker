@@ -28,7 +28,7 @@
 body.theme-neet {
   /* Cute & Feminine Theme */
   --bg-gradient: linear-gradient(135deg, #fce7f3 0%, #ede9fe 50%, #e0e7ff 100%);
-  --card-bg: rgba(255, 255, 255, 0.7);
+  --card-bg: rgba(255, 255, 255, 0.75);
   --card-strong: rgba(255, 255, 255, 0.95);
   --text: #334155;
   --text-muted: #64748b;
@@ -37,9 +37,47 @@ body.theme-neet {
   --secondary: #8b5cf6; /* Lavender */
   --secondary-hover: #7c3aed;
   
-  --shadow-color: rgba(139, 92, 246, 0.15);
+  --shadow-color: rgba(236, 72, 153, 0.2);
   --radius-lg: 28px;
-  --radius-xl: 36px;
+  --radius-xl: 40px;
+}
+
+body.theme-neet .cute-card {
+  border: 4px solid white;
+  border-radius: 40px;
+}
+
+body.theme-neet .btn-primary {
+  box-shadow: 0 8px 0 rgba(225, 29, 72, 0.2), 0 15px 20px rgba(244, 63, 94, 0.4);
+  transform: translateY(0);
+}
+body.theme-neet .btn-primary:hover:not(:disabled) {
+  transform: translateY(4px);
+  box-shadow: 0 4px 0 rgba(225, 29, 72, 0.2), 0 8px 10px rgba(244, 63, 94, 0.4);
+}
+body.theme-neet .btn-primary:active:not(:disabled) {
+  transform: translateY(8px);
+  box-shadow: 0 0 0 rgba(225, 29, 72, 0.2);
+}
+
+.btn-back {
+  position: absolute;
+  top: -2.5rem;
+  left: 0;
+  font-weight: 800;
+  color: var(--text-muted);
+  font-size: 1rem;
+  background: rgba(255, 255, 255, 0.6);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-pill);
+  transition: all 0.2s ease;
+  backdrop-filter: blur(5px);
+}
+.btn-back:hover {
+  background: white;
+  color: var(--primary);
+  transform: translateX(-4px);
+  box-shadow: var(--shadow-sm);
 }
 
 * {
@@ -520,4 +558,55 @@ textarea.cute-input {
 .empty-icon {
   font-size: 3rem;
   margin-bottom: 1rem;
+}
+
+/* Grids */
+.grid-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  width: min(1000px, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: 2rem 0;
+}
+
+.section-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .page-shell {
+    padding: 1rem 0 2rem;
+  }
+  
+  .grid-two {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    padding: 1rem 0;
+  }
+  
+  .metrics {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .cta-buttons-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .cute-card {
+    padding: 1.5rem;
+  }
+  
+  .flashcard {
+    padding: 2rem 1.5rem;
+    min-height: auto;
+  }
+  
+  .rating-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-top: 2rem;
+  }
 }

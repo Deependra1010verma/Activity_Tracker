@@ -82,7 +82,7 @@ export function AuthForm() {
               name="username"
               className="cute-input"
               onChange={(event) => setUsername(event.target.value)}
-              placeholder="e.g. Deependra"
+              placeholder="Username"
               value={username}
             />
           </div>
@@ -95,7 +95,7 @@ export function AuthForm() {
               type="password"
               className="cute-input"
               onChange={(event) => setPassword(event.target.value)}
-              placeholder="••••••••"
+              placeholder="Password"
               value={password}
             />
           </div>

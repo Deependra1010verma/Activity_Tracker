@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { generateCardsForConcept } from "@/lib/card-generator";
 import { learnerModeCopy } from "@/lib/profile-copy";
@@ -9,6 +10,12 @@ import { Profile } from "@/lib/types";
 
 type LearnFormViewProps = {
   profile: Profile;
+  editEntry?: {
+    id: string;
+    title: string;
+    summary: string;
+    concepts: string[];
+  };
 };
 
 type SubjectIdRow = {
@@ -25,17 +32,17 @@ type CardIdRow = {
   id: string;
 };
 
-export function LearnFormView({ profile }: LearnFormViewProps) {
+export function LearnFormView({ profile, editEntry }: LearnFormViewProps) {
   const router = useRouter();
   const modeCopy = learnerModeCopy[profile.learnerMode];
-  const [topic, setTopic] = useState("");
+  const [topic, setTopic] = useState(editEntry?.title ?? "");
   const subject =
     profile.learnerMode === "general" ? "General Memory Space" : "School + NEET Space";
   const [sourceType, setSourceType] = useState(
     profile.learnerMode === "general" ? "self notes" : "NCERT",
   );
-  const [notes, setNotes] = useState("");
-  const [concepts, setConcepts] = useState("");
+  const [notes, setNotes] = useState(editEntry?.summary ?? "");
+  const [concepts, setConcepts] = useState(editEntry?.concepts?.join("\n") ?? "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -167,11 +174,18 @@ export function LearnFormView({ profile }: LearnFormViewProps) {
   }
 
   return (
-    <div className="centered-page">
-      <div className="cute-card" style={{ maxWidth: "650px", width: "100%" }}>
+    <div className="centered-page" style={{ position: "relative" }}>
+      <div className="cute-card" style={{ maxWidth: "650px", width: "100%", position: "relative", marginTop: "2rem" }}>
+        <Link href="/" className="btn-back">
+          ← Back to Dashboard
+        </Link>
         <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-          <h2 className="cute-title" style={{ fontSize: "2.2rem" }}>Log New Learning {profile.learnerMode === "neet" ? "🌸" : "⚡"}</h2>
-          <p className="cute-subtitle">What did you learn today? Let's make sure it sticks forever.</p>
+          <h2 className="cute-title" style={{ fontSize: "2.2rem" }}>
+            {editEntry ? "Review Note" : "Log New Learning"} {profile.learnerMode === "neet" ? "🐼🌸🎀" : "⚡"}
+          </h2>
+          <p className="cute-subtitle">
+            {editEntry ? "Here is what you learned! Read or update it below." : "What did you learn today? Let's make sure it sticks forever."}
+          </p>
         </div>
 
         <form className="cute-form" onSubmit={handleSubmit}>
@@ -216,7 +230,7 @@ export function LearnFormView({ profile }: LearnFormViewProps) {
           </div>
 
           <button className="btn-primary" disabled={isSubmitting} type="submit" style={{ marginTop: "1rem" }}>
-            {isSubmitting ? "Saving Magic..." : "Save Learning"}
+            {isSubmitting ? "Saving Magic..." : editEntry ? "Save Updates" : "Save Learning"}
           </button>
         </form>
 
