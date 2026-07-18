@@ -83,5 +83,5 @@ export default async function HomePage() {
   const stats = buildDashboardStats({ totalEntries: mappedEntries.length, cards: mappedCards });
   const profile = mapProfileRowToProfile(profileRow as any, subjectRows.map(mapSubjectRow));
 
-  return <HomeShell profile={profile} stats={stats} userEmail={currentUser.email} />;
+  return <HomeShell profile={profile} stats={stats} entries={mappedEntries} userEmail={currentUser.email} />;
 }

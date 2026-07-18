@@ -61,11 +61,12 @@ type LoadState = "loading" | "signed_out" | "needs_profile" | "ready" | "error";
 type HomeShellProps = {
   profile?: Profile;
   stats?: DashboardStats;
+  entries?: LearningEntry[];
   userEmail?: string | null;
   needsProfile?: boolean;
 };
 
-export function HomeShell({ profile, stats, userEmail, needsProfile }: HomeShellProps) {
+export function HomeShell({ profile, stats, entries = [], userEmail, needsProfile }: HomeShellProps) {
   useEffect(() => {
     if (profile?.learnerMode) {
       document.body.className = profile.learnerMode === "neet" ? "theme-neet" : "";
@@ -115,7 +116,7 @@ export function HomeShell({ profile, stats, userEmail, needsProfile }: HomeShell
         </Link>
       </div>
       <AuthControls email={userEmail} />
-      <DashboardView profile={profile} stats={stats} />
+      <DashboardView profile={profile} stats={stats} entries={entries} />
     </>
   );
 }
