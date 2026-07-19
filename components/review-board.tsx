@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { promptStyleLabels } from "@/lib/profile-copy";
 import {
@@ -31,7 +31,25 @@ export function ReviewBoardView({ cards, profile }: ReviewBoardViewProps) {
   const [queue, setQueue] = useState(cards);
   const [showAnswer, setShowAnswer] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState("");
+  const [autoPlayAudio, setAutoPlayAudio] = useState(false);
+
+  const speak = (text: string) => {
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    // You can customize voice/speed here if needed
+    window.speechSynthesis.speak(utterance);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (typeof window !== "undefined" && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
 
   const dueCards = useMemo(
     () =>
@@ -46,6 +64,18 @@ export function ReviewBoardView({ cards, profile }: ReviewBoardViewProps) {
   );
 
   const activeCard = dueCards[0] ?? queue[0];
+
+  useEffect(() => {
+    if (autoPlayAudio && activeCard && !showAnswer) {
+      speak(activeCard.prompt);
+    }
+  }, [activeCard?.id, autoPlayAudio, showAnswer]);
+
+  useEffect(() => {
+    if (autoPlayAudio && showAnswer && activeCard) {
+      speak(activeCard.answer);
+    }
+  }, [showAnswer, autoPlayAudio, activeCard?.id]);
 
   const previews = activeCard
     ? ratings.map((rating) => {
@@ -124,6 +154,43 @@ export function ReviewBoardView({ cards, profile }: ReviewBoardViewProps) {
     }
   }
 
+  async function handleDeleteCard() {
+    if (!activeCard) return;
+    if (!confirm("Are you sure you want to completely delete this flashcard?")) return;
+
+    setError("");
+    if (!hasSupabaseEnv()) {
+      setError("Database is not configured properly.");
+      return;
+    }
+
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) {
+      setError("Could not connect to database.");
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const { error: deleteError } = await supabase
+        .from("cards")
+        .delete()
+        .eq("id", activeCard.id);
+
+      if (deleteError) throw deleteError;
+
+      setQueue((currentQueue) =>
+        currentQueue.filter((card) => card.id !== activeCard.id)
+      );
+      setShowAnswer(false);
+      router.refresh();
+    } catch (err: any) {
+      setError(err.message || "Failed to delete card.");
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
   if (!activeCard || dueCards.length === 0) {
     return (
       <div className="centered-page">
@@ -148,25 +215,67 @@ export function ReviewBoardView({ cards, profile }: ReviewBoardViewProps) {
           ← Back to Dashboard
         </Link>
         
-        {/* Progress indicator */}
-        <div style={{ textAlign: "center", marginBottom: "1rem", color: "var(--text-muted)", fontWeight: "800" }}>
-          {dueCards.length} cards remaining today
+        {/* Top Controls */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+          <div style={{ color: "var(--text-muted)", fontWeight: "800" }}>
+            {dueCards.length} cards remaining today
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <label style={{ fontSize: "0.9rem", color: "var(--text-muted)", fontWeight: "bold", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <input 
+                type="checkbox" 
+                checked={autoPlayAudio} 
+                onChange={(e) => setAutoPlayAudio(e.target.checked)} 
+                style={{ cursor: "pointer" }}
+              />
+              Auto-Play Audio 🎧
+            </label>
+          </div>
         </div>
 
         <div className="flashcard">
-          <div className="flashcard-tag">
-            {promptStyleLabels[activeCard.promptStyle]}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
+            <div className="flashcard-tag">
+              {promptStyleLabels[activeCard.promptStyle]}
+            </div>
+            <button 
+              type="button"
+              onClick={handleDeleteCard}
+              disabled={isDeleting}
+              style={{ background: "none", border: "none", color: "var(--again)", cursor: "pointer", fontSize: "1.2rem", padding: "0.2rem", opacity: 0.7 }}
+              title="Delete this card"
+            >
+              🗑️
+            </button>
           </div>
 
-          <h2 className="flashcard-prompt">{activeCard.prompt}</h2>
+          <div style={{ position: "relative" }}>
+            <h2 className="flashcard-prompt">{activeCard.prompt}</h2>
+            <button 
+              onClick={() => speak(activeCard.prompt)}
+              style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.2rem", position: "absolute", right: "-30px", top: "5px", opacity: 0.5 }}
+              title="Read Aloud"
+            >
+              🔊
+            </button>
+          </div>
           
           <p style={{ color: "var(--text-muted)", fontWeight: "700", marginBottom: "2rem" }}>
             From: {activeCard.sourceTitle}
           </p>
 
           {showAnswer ? (
-            <div className="flashcard-answer">
-              {activeCard.answer}
+            <div style={{ position: "relative" }}>
+              <div className="flashcard-answer">
+                {activeCard.answer}
+              </div>
+              <button 
+                onClick={() => speak(activeCard.answer)}
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.2rem", position: "absolute", right: "-30px", top: "5px", opacity: 0.5 }}
+                title="Read Aloud"
+              >
+                🔊
+              </button>
             </div>
           ) : (
             <div style={{ margin: "2rem 0" }}>
