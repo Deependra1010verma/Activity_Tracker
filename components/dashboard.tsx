@@ -32,22 +32,7 @@ export function DashboardView({ profile, stats, entries = [] }: DashboardViewPro
               : "You're all caught up for today! Learn something new?"}
         </p>
 
-        <div className="metrics" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", margin: "2rem 0" }}>
-          <div className="metric" style={{ background: "rgba(236, 72, 153, 0.05)", borderColor: "rgba(236, 72, 153, 0.1)", borderRadius: "var(--radius-lg)", padding: "1.5rem" }}>
-            <p className="metric-label" style={{ color: "var(--primary)", fontWeight: 800, margin: 0 }}>Active Memories {profile.learnerMode === "neet" ? "🧠✨" : ""}</p>
-            <p className="metric-value" style={{ color: "var(--primary)", fontSize: "2.5rem", fontWeight: 900, margin: "0.5rem 0 0" }}>{stats.activeCards}</p>
-          </div>
-          
-          <div className="metric" style={{ background: "rgba(139, 92, 246, 0.05)", borderColor: "rgba(139, 92, 246, 0.1)", borderRadius: "var(--radius-lg)", padding: "1.5rem", textAlign: "left" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-              <p className="metric-label" style={{ color: "var(--secondary)", fontWeight: 800, margin: 0 }}>Retention {profile.learnerMode === "neet" ? "📈🐼" : ""}</p>
-              <span style={{ color: "var(--secondary)", fontWeight: 900, fontSize: "1.2rem" }}>{stats.retentionScore}%</span>
-            </div>
-            <div className="progress-bar-container">
-              <div className="progress-bar-fill" style={{ width: `${stats.retentionScore}%` }}></div>
-            </div>
-          </div>
-        </div>
+
 
         <div className="cta-buttons-container">
           <Link href={`/learn?profile=${profile.id}`} className="cta-btn capture">
@@ -88,7 +73,9 @@ export function DashboardView({ profile, stats, entries = [] }: DashboardViewPro
                   </div>
                   <p className="note-summary">{entry.summary}</p>
                   <div className="note-footer">
-                    <span className="badge">{entry.subject}</span>
+                    {entry.subject !== "General Memory Space" && (
+                      <span className="badge">{entry.subject}</span>
+                    )}
                     <span className="note-date">
                       {new Date(entry.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                     </span>

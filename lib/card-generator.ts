@@ -28,13 +28,6 @@ export function generateCardsForConcept(
         examPriority: "high",
         tags: [subject.toLowerCase(), "high-yield"],
       },
-      {
-        promptStyle: "why",
-        prompt: `${cleanConcept} ke peeche reason ya explanation kya hai?`,
-        answer: cleanConcept,
-        examPriority: "high",
-        tags: [subject.toLowerCase(), "reasoning"],
-      },
     ];
   }
 
@@ -47,13 +40,6 @@ export function generateCardsForConcept(
         examPriority: "medium",
         tags: [subject.toLowerCase(), "short-answer"],
       },
-      {
-        promptStyle: "fill_blank",
-        prompt: `Fill in the blank related to: ${cleanConcept}`,
-        answer: cleanConcept,
-        examPriority: "medium",
-        tags: [subject.toLowerCase(), "keyword"],
-      },
     ];
   }
 
@@ -64,20 +50,6 @@ export function generateCardsForConcept(
       answer: cleanConcept,
       examPriority: "medium",
       tags: [subject.toLowerCase(), "definition"],
-    },
-    {
-      promptStyle: "why",
-      prompt: `${cleanConcept} important kyun hai ya aisa kyun hota hai?`,
-      answer: cleanConcept,
-      examPriority: "medium",
-      tags: [subject.toLowerCase(), "why"],
-    },
-    {
-      promptStyle: "scenario",
-      prompt: `Real usage scenario me ${cleanConcept} ko kaise apply karoge?`,
-      answer: cleanConcept,
-      examPriority: "low",
-      tags: [subject.toLowerCase(), "application"],
     },
   ];
 }

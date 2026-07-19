@@ -255,9 +255,6 @@ export function LearnFormView({ profile, editEntry }: LearnFormViewProps) {
           <h2 className="cute-title" style={{ fontSize: "2.2rem" }}>
             {editEntry ? "Review Note" : "Log New Learning"} {profile.learnerMode === "neet" ? "🐼🌸🎀" : "⚡"}
           </h2>
-          <p className="cute-subtitle">
-            {editEntry ? "Here is what you learned! Read or update it below." : "What did you learn today? Let's make sure it sticks forever."}
-          </p>
         </div>
 
         <form className="cute-form" onSubmit={handleSubmit}>
@@ -313,11 +310,6 @@ export function LearnFormView({ profile, editEntry }: LearnFormViewProps) {
               readOnly={!!editEntry}
               style={{ opacity: editEntry ? 0.7 : 1 }}
             />
-            {editEntry && (
-              <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", margin: "0.25rem 0 0" }}>
-                * Atomic concepts and flashcards are locked in edit mode to preserve your spaced-repetition history.
-              </p>
-            )}
           </div>
 
           <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
