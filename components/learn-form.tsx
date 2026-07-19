@@ -349,7 +349,7 @@ export function LearnFormView({ profile, editEntry, initialTopic, initialNotes }
               name="topic"
               className="cute-input"
               onChange={(event) => setTopic(event.target.value)}
-              placeholder={profile.learnerMode === "general" ? "e.g. Basics of Binary Search" : "e.g. Cell organelles"}
+              placeholder="Topic name..."
               value={topic}
             />
           </div>
@@ -382,7 +382,7 @@ export function LearnFormView({ profile, editEntry, initialTopic, initialNotes }
               name="notes"
               className="cute-input"
               onChange={(event) => setNotes(event.target.value)}
-              placeholder="Summarize what you learned in your own words, OR upload an image above and let AI extract the text..."
+              placeholder="Write your notes here..."
               value={notes}
               style={{ minHeight: "150px" }}
             />
@@ -407,11 +407,7 @@ export function LearnFormView({ profile, editEntry, initialTopic, initialNotes }
               name="concepts"
               className="cute-input"
               onChange={(event) => setConcepts(event.target.value)}
-              placeholder={
-                profile.learnerMode === "general"
-                  ? "1. Binary search needs sorted array\n2. Time complexity is O(log n)"
-                  : "1. Mitochondria is the powerhouse of the cell\n2. Ribosomes synthesize proteins"
-              }
+              placeholder={"1. Key concept 1\n2. Key concept 2"}
               value={concepts}
               readOnly={!!editEntry}
               style={{ opacity: editEntry ? 0.7 : 1 }}
