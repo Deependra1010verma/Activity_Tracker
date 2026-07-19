@@ -109,12 +109,7 @@ export function HomeShell({ profile, stats, entries = [], userEmail, needsProfil
 
   return (
     <>
-      <div className="chips" style={{ marginBottom: "1rem" }}>
-        <span className="chip">{profile.fullName}</span>
-        <Link className="chip" href="/onboarding">
-          Edit profile
-        </Link>
-      </div>
+
       <AuthControls email={userEmail} />
       <DashboardView profile={profile} stats={stats} entries={entries} />
     </>
