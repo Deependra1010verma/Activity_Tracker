@@ -61,7 +61,7 @@ export function LearnFormView({ profile, editEntry, initialTopic, initialNotes }
       if (SpeechRecognition) {
         const reco = new SpeechRecognition();
         reco.continuous = true;
-        reco.interimResults = true;
+        reco.interimResults = false;
         
         reco.onresult = (event: any) => {
           let currentTranscript = "";
@@ -71,7 +71,13 @@ export function LearnFormView({ profile, editEntry, initialTopic, initialNotes }
             }
           }
           if (currentTranscript) {
-            setNotes(prev => prev + (prev ? " " : "") + currentTranscript);
+            setNotes(prev => {
+              const newText = currentTranscript.trim();
+              if (!newText) return prev;
+              // Add a space only if previous text doesn't end with a space or newline
+              const separator = prev && !prev.match(/\s$/) ? " " : "";
+              return prev + separator + newText;
+            });
           }
         };
 

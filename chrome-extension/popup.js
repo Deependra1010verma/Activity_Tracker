@@ -14,14 +14,12 @@ document.getElementById('clipBtn').addEventListener('click', async () => {
   const pageTitle = tab.title || "Web Clipped Note";
 
   // Build the URL with query parameters
-  const baseUrl = "http://localhost:3000/learn"; // Change to production URL if deployed
+  const baseUrl = "https://khushbu-verma.vercel.app/learn"; // Change to production URL if deployed
   
   const searchParams = new URLSearchParams();
   searchParams.set("topic", pageTitle);
   if (selectedText) {
-    searchParams.set("notes", selectedText + "\n\nSource: " + tab.url);
-  } else {
-    searchParams.set("notes", "Source: " + tab.url);
+    searchParams.set("notes", selectedText);
   }
 
   const finalUrl = `${baseUrl}?${searchParams.toString()}`;
