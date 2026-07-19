@@ -295,23 +295,7 @@ export function LearnFormView({ profile, editEntry }: LearnFormViewProps) {
             />
           </div>
 
-          <div className="cute-field">
-            <label htmlFor="image-upload">Upload Notes (Image to Flashcards OCR)</label>
-            <input
-              id="image-upload"
-              type="file"
-              accept="image/*"
-              onChange={handleImageSelect}
-              className="cute-input"
-              style={{ padding: "0.5rem" }}
-              disabled={!!editEntry}
-            />
-            {imageFile && (
-              <p style={{ fontSize: "0.8rem", color: "var(--primary)", margin: "0.25rem 0 0" }}>
-                📸 Image selected: {imageFile.name}
-              </p>
-            )}
-          </div>
+
 
           <div className="cute-field">
             <label htmlFor="notes">Your Notes</label>
@@ -354,6 +338,24 @@ export function LearnFormView({ profile, editEntry }: LearnFormViewProps) {
               readOnly={!!editEntry}
               style={{ opacity: editEntry ? 0.7 : 1 }}
             />
+          </div>
+
+          <div className="cute-field">
+            <label htmlFor="image-upload">Upload Notes (Image to Flashcards OCR)</label>
+            <input
+              id="image-upload"
+              type="file"
+              accept="image/*"
+              onChange={handleImageSelect}
+              className="cute-input"
+              style={{ padding: "0.5rem" }}
+              disabled={!!editEntry}
+            />
+            {imageFile && (
+              <p style={{ fontSize: "0.8rem", color: "var(--primary)", margin: "0.25rem 0 0" }}>
+                📸 Image selected: {imageFile.name}
+              </p>
+            )}
           </div>
 
           <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>

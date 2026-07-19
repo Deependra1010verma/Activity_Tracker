@@ -53,7 +53,7 @@ export default async function HomePage() {
     const [profileRes, subjectRes, entryRes, cardRes, entryCountRes] = await Promise.all([
       supabase.from("profiles").select(profileSelect).eq("id", cachedProfileId).maybeSingle(),
       supabase.from("subjects").select("id, name, accent, focus").eq("profile_id", cachedProfileId).order("created_at", { ascending: true }),
-      supabase.from("learning_entries").select("id, profile_id, title, subject, created_at, summary, source_type, concepts(concept_text)").eq("profile_id", cachedProfileId).order("created_at", { ascending: false }).limit(6),
+      supabase.from("learning_entries").select("id, profile_id, title, subject, created_at, summary, source_type, concepts(concept_text)").eq("profile_id", cachedProfileId).order("created_at", { ascending: false }).limit(50),
       supabase.from("cards").select(cardSelect).eq("concepts.learning_entries.profile_id", cachedProfileId).order("next_review_at", { ascending: true }).limit(8),
       supabase.from("learning_entries").select("*", { count: "exact", head: true }).eq("profile_id", cachedProfileId)
     ]);
@@ -67,8 +67,8 @@ export default async function HomePage() {
     profileRow = pRow;
     if (profileRow) {
       const [subjectRes, entryRes, cardRes, entryCountRes] = await Promise.all([
-        supabase.from("subjects").select("id, name, accent, focus").eq("profile_id", profileRow.id).order("created_at", { ascending: true }),
-        supabase.from("learning_entries").select("id, profile_id, title, subject, created_at, summary, source_type, concepts(concept_text)").eq("profile_id", profileRow.id).order("created_at", { ascending: false }).limit(6),
+      supabase.from("subjects").select("id, name, accent, focus").eq("profile_id", profileRow.id).order("created_at", { ascending: true }),
+        supabase.from("learning_entries").select("id, profile_id, title, subject, created_at, summary, source_type, concepts(concept_text)").eq("profile_id", profileRow.id).order("created_at", { ascending: false }).limit(50),
         supabase.from("cards").select(cardSelect).eq("concepts.learning_entries.profile_id", profileRow.id).order("next_review_at", { ascending: true }).limit(8),
         supabase.from("learning_entries").select("*", { count: "exact", head: true }).eq("profile_id", profileRow.id)
       ]);
