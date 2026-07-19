@@ -12,6 +12,12 @@ type DashboardViewProps = {
 
 export function DashboardView({ profile, stats, entries = [] }: DashboardViewProps) {
   const [selectedTopic, setSelectedTopic] = useState<string>("all");
+  const [displayLimit, setDisplayLimit] = useState(6);
+
+  const handleTopicChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedTopic(e.target.value);
+    setDisplayLimit(6);
+  };
 
   const isGreetingMorning = new Date().getHours() < 12;
   const isGreetingEvening = new Date().getHours() >= 18;
@@ -30,9 +36,6 @@ export function DashboardView({ profile, stats, entries = [] }: DashboardViewPro
         <h2 className="cute-title">
           {greeting}, {profile.fullName.split(" ")[0]}! {profile.learnerMode === "neet" ? "🐼🎀✨" : "⚡"}
         </h2>
-
-
-
 
         <div className="cta-buttons-container">
           <Link href={`/learn?profile=${profile.id}`} className="cta-btn capture">
@@ -56,7 +59,7 @@ export function DashboardView({ profile, stats, entries = [] }: DashboardViewPro
             <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
               <select 
                 value={selectedTopic} 
-                onChange={(e) => setSelectedTopic(e.target.value)}
+                onChange={handleTopicChange}
                 className="cute-input"
                 style={{ padding: "0.4rem 0.8rem", width: "auto", minWidth: "150px", margin: 0 }}
               >
@@ -85,25 +88,57 @@ export function DashboardView({ profile, stats, entries = [] }: DashboardViewPro
             <p style={{ margin: 0, color: "var(--text-muted)" }}>No notes match the selected topic.</p>
           </div>
         ) : (
-          <div className="note-grid">
-            {displayedEntries.map((entry) => (
-              <Link key={entry.id} href={`/learn?entryId=${entry.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                <div className="note-card" style={{ height: "100%" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.5rem" }}>
-                    <h4 className="note-title" title={entry.title}>{entry.title}</h4>
+          <div>
+            <div className="note-grid">
+              {displayedEntries.slice(0, displayLimit).map((entry) => (
+                <Link key={entry.id} href={`/learn?entryId=${entry.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                  <div className="note-card" style={{ height: "100%" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.5rem" }}>
+                      <h4 className="note-title" title={entry.title}>{entry.title}</h4>
+                    </div>
+                    <p className="note-summary">{entry.summary}</p>
+                    <div className="note-footer">
+                      {entry.subject !== "General Memory Space" && (
+                        <span className="badge">{entry.subject}</span>
+                      )}
+                      <span className="note-date">
+                        {new Date(entry.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                      </span>
+                    </div>
                   </div>
-                  <p className="note-summary">{entry.summary}</p>
-                  <div className="note-footer">
-                    {entry.subject !== "General Memory Space" && (
-                      <span className="badge">{entry.subject}</span>
-                    )}
-                    <span className="note-date">
-                      {new Date(entry.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              ))}
+            </div>
+            
+            {displayedEntries.length > displayLimit && (
+              <div style={{ textAlign: "center", marginTop: "1.5rem" }}>
+                <button 
+                  onClick={() => setDisplayLimit(prev => prev + 6)}
+                  type="button"
+                  style={{ 
+                    background: "transparent", 
+                    border: "2px solid var(--primary)", 
+                    color: "var(--primary)", 
+                    borderRadius: "var(--radius-pill)", 
+                    padding: "0.5rem 1.5rem", 
+                    fontSize: "0.9rem", 
+                    cursor: "pointer", 
+                    fontWeight: "bold",
+                    transition: "all 0.2s"
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.background = "var(--primary)";
+                    e.currentTarget.style.color = "white";
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.background = "transparent";
+                    e.currentTarget.style.color = "var(--primary)";
+                  }}
+                >
+                  Load More Notes 👇
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
