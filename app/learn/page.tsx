@@ -106,5 +106,8 @@ export default async function LearnPage({ searchParams }: LearnPageProps) {
 
   const profile = mapProfileRowToProfile(profileRow as any, subjectRows.map(mapSubjectRow));
 
-  return <LearnShell profile={profile} userEmail={currentUser.email} editEntry={editEntry} />;
+  const topicParam = resolvedParams.topic as string | undefined;
+  const notesParam = resolvedParams.notes as string | undefined;
+
+  return <LearnShell profile={profile} userEmail={currentUser.email} editEntry={editEntry} initialTopic={topicParam} initialNotes={notesParam} />;
 }

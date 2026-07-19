@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Recall Clipper</title>
+  <style>
+    body {
+      width: 300px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      padding: 16px;
+      margin: 0;
+      background: #fafafa;
+      color: #333;
+    }
+    h2 {
+      margin-top: 0;
+      font-size: 1.2rem;
+      color: #8b5cf6;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    p {
+      font-size: 0.9rem;
+      color: #555;
+      margin-bottom: 16px;
+    }
+    button {
+      background: #8b5cf6;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      width: 100%;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #7c3aed;
+    }
+  </style>
+</head>
+<body>
+  <h2>✨ Recall Clipper</h2>
+  <p>Highlight some text on this page, then click the button below to send it directly to your Recall Ledger.</p>
+  <button id="clipBtn">Send to Activity Tracker</button>
+  
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -43,9 +43,11 @@ type LearnShellProps = {
     summary: string;
     concepts: string[];
   };
+  initialTopic?: string;
+  initialNotes?: string;
 };
 
-export function LearnShell({ profile, userEmail, needsProfile, editEntry }: LearnShellProps) {
+export function LearnShell({ profile, userEmail, needsProfile, editEntry, initialTopic, initialNotes }: LearnShellProps) {
   useEffect(() => {
     if (profile?.learnerMode) {
       document.body.className = profile.learnerMode === "neet" ? "theme-neet" : "";
@@ -76,5 +78,5 @@ export function LearnShell({ profile, userEmail, needsProfile, editEntry }: Lear
     );
   }
 
-  return <LearnFormView profile={profile} editEntry={editEntry} />;
+  return <LearnFormView profile={profile} editEntry={editEntry} initialTopic={initialTopic} initialNotes={initialNotes} />;
 }

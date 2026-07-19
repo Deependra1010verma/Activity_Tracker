@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { generateCardsForConcept } from "@/lib/card-generator";
@@ -16,6 +16,8 @@ type LearnFormViewProps = {
     summary: string;
     concepts: string[];
   };
+  initialTopic?: string;
+  initialNotes?: string;
 };
 
 type SubjectIdRow = {
@@ -32,16 +34,16 @@ type CardIdRow = {
   id: string;
 };
 
-export function LearnFormView({ profile, editEntry }: LearnFormViewProps) {
+export function LearnFormView({ profile, editEntry, initialTopic, initialNotes }: LearnFormViewProps) {
   const router = useRouter();
   const modeCopy = learnerModeCopy[profile.learnerMode];
-  const [topic, setTopic] = useState(editEntry?.title ?? "");
+  const [topic, setTopic] = useState(editEntry?.title ?? initialTopic ?? "");
   const subject =
     profile.learnerMode === "general" ? "General Memory Space" : "School + NEET Space";
   const [sourceType, setSourceType] = useState(
     profile.learnerMode === "general" ? "self notes" : "NCERT",
   );
-  const [notes, setNotes] = useState(editEntry?.summary ?? "");
+  const [notes, setNotes] = useState(editEntry?.summary ?? initialNotes ?? "");
   const [concepts, setConcepts] = useState(editEntry?.concepts?.join("\n") ?? "");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageBase64, setImageBase64] = useState("");
@@ -50,6 +52,57 @@ export function LearnFormView({ profile, editEntry }: LearnFormViewProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [isListening, setIsListening] = useState(false);
+  const [recognition, setRecognition] = useState<any>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        const reco = new SpeechRecognition();
+        reco.continuous = true;
+        reco.interimResults = true;
+        
+        reco.onresult = (event: any) => {
+          let currentTranscript = "";
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            if (event.results[i].isFinal) {
+              currentTranscript += event.results[i][0].transcript;
+            }
+          }
+          if (currentTranscript) {
+            setNotes(prev => prev + (prev ? " " : "") + currentTranscript);
+          }
+        };
+
+        reco.onerror = (event: any) => {
+          console.error("Speech recognition error", event.error);
+          setIsListening(false);
+        };
+        
+        reco.onend = () => {
+          setIsListening(false);
+        };
+        
+        setRecognition(reco);
+      }
+    }
+  }, []);
+
+  function toggleListening() {
+    if (!recognition) {
+      alert("Your browser doesn't support Voice Notes. Try Google Chrome.");
+      return;
+    }
+    
+    if (isListening) {
+      recognition.stop();
+      setIsListening(false);
+    } else {
+      recognition.start();
+      setIsListening(true);
+    }
+  }
 
   function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -298,7 +351,26 @@ export function LearnFormView({ profile, editEntry }: LearnFormViewProps) {
 
 
           <div className="cute-field">
-            <label htmlFor="notes">Your Notes</label>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+              <label htmlFor="notes">Your Notes</label>
+              <button 
+                type="button" 
+                onClick={toggleListening}
+                style={{ 
+                  background: isListening ? "rgba(239, 68, 68, 0.1)" : "none", 
+                  border: `1px solid ${isListening ? "var(--again)" : "var(--primary)"}`, 
+                  color: isListening ? "var(--again)" : "var(--primary)", 
+                  borderRadius: "var(--radius-pill)", 
+                  padding: "0.25rem 0.75rem", 
+                  fontSize: "0.8rem", 
+                  cursor: "pointer", 
+                  fontWeight: "bold",
+                  animation: isListening ? "pulse 1.5s infinite" : "none"
+                }}
+              >
+                {isListening ? "🔴 Listening..." : "🎤 Voice Notes"}
+              </button>
+            </div>
             <textarea
               id="notes"
               name="notes"

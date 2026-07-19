@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "Recall Clipper",
+  "version": "1.0",
+  "description": "Save text and articles directly to your Recall Ledger.",
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ]
+}
