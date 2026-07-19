@@ -43,17 +43,34 @@ export function LearnFormView({ profile, editEntry }: LearnFormViewProps) {
   );
   const [notes, setNotes] = useState(editEntry?.summary ?? "");
   const [concepts, setConcepts] = useState(editEntry?.concepts?.join("\n") ?? "");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageBase64, setImageBase64] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
+  function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      // Extract just the base64 part, removing the "data:image/png;base64," prefix
+      const base64 = result.split(",")[1];
+      setImageBase64(base64);
+    };
+    reader.readAsDataURL(file);
+  }
+
   async function handleGenerateAI() {
     setError("");
     setMessage("");
-    if (!topic.trim() || !notes.trim()) {
-      setError("Please fill out the Topic and Your Notes first so AI knows what to generate!");
+    if (!notes.trim() && !imageBase64) {
+      setError("Please either write notes or upload an image of your notes so AI knows what to generate!");
       return;
     }
     
@@ -62,14 +79,23 @@ export function LearnFormView({ profile, editEntry }: LearnFormViewProps) {
       const response = await fetch("/api/generate-cards", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ summary: notes, topic, learnerMode: profile.learnerMode })
+        body: JSON.stringify({ 
+          summary: notes, 
+          topic, 
+          learnerMode: profile.learnerMode,
+          imageBase64: imageBase64 || undefined,
+          mimeType: imageFile?.type || undefined
+        })
       });
       
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "AI generation failed");
       
       setConcepts(data.concepts.join("\n"));
-      setMessage("AI successfully extracted concepts! You can review them below.");
+      if (data.summary) {
+        setNotes(data.summary);
+      }
+      setMessage("AI successfully extracted text and concepts! You can review them below.");
     } catch (err: any) {
       setError(err.message || "Failed to connect to AI");
     } finally {
@@ -121,10 +147,7 @@ export function LearnFormView({ profile, editEntry }: LearnFormViewProps) {
       .map((line) => line.trim())
       .filter(Boolean);
 
-    if (!topic.trim() || !notes.trim() || parsedConcepts.length === 0) {
-      setError("Please fill out the topic, your notes, and at least 1 key concept!");
-      return;
-    }
+    const finalTopic = topic.trim() || "Untitled Note";
 
     setIsSubmitting(true);
 
@@ -134,7 +157,7 @@ export function LearnFormView({ profile, editEntry }: LearnFormViewProps) {
         const { error: updateError } = await supabase
           .from("learning_entries")
           .update({
-            title: topic.trim(),
+            title: finalTopic,
             summary: notes.trim(),
             source_notes: notes.trim(),
           })
@@ -164,7 +187,7 @@ export function LearnFormView({ profile, editEntry }: LearnFormViewProps) {
         .insert({
           profile_id: profile.id,
           subject_id: subjectRow?.id ?? null,
-          title: topic.trim(),
+          title: finalTopic,
           subject,
           source_type: sourceType.trim() || null,
           summary: notes.trim(),
@@ -177,60 +200,62 @@ export function LearnFormView({ profile, editEntry }: LearnFormViewProps) {
 
       const entry = rawEntry as EntryIdRow;
 
-      const { data: rawConceptRows, error: conceptError } = await supabase
-        .from("concepts")
-        .insert(
-          parsedConcepts.map((conceptText) => ({
-            learning_entry_id: entry.id,
-            concept_text: conceptText,
-          })),
-        )
-        .select("id, concept_text");
+      if (parsedConcepts.length > 0) {
+        const { data: rawConceptRows, error: conceptError } = await supabase
+          .from("concepts")
+          .insert(
+            parsedConcepts.map((conceptText) => ({
+              learning_entry_id: entry.id,
+              concept_text: conceptText,
+            })),
+          )
+          .select("id, concept_text");
 
-      if (conceptError) throw conceptError;
+        if (conceptError) throw conceptError;
 
-      const conceptRows = (rawConceptRows ?? []) as ConceptInsertRow[];
+        const conceptRows = (rawConceptRows ?? []) as ConceptInsertRow[];
 
-      const generatedCards = conceptRows.flatMap((conceptRow) =>
-        generateCardsForConcept(conceptRow.concept_text, profile.learnerMode, subject).map(
-          (card) => ({
-            conceptId: conceptRow.id,
-            promptStyle: card.promptStyle,
-            prompt: card.prompt,
-            answer: card.answer,
-            examPriority: card.examPriority,
-            tags: card.tags,
-          }),
-        ),
-      );
+        const generatedCards = conceptRows.flatMap((conceptRow) =>
+          generateCardsForConcept(conceptRow.concept_text, profile.learnerMode, subject).map(
+            (card) => ({
+              conceptId: conceptRow.id,
+              promptStyle: card.promptStyle,
+              prompt: card.prompt,
+              answer: card.answer,
+              examPriority: card.examPriority,
+              tags: card.tags,
+            }),
+          ),
+        );
 
-      const cardPayload = generatedCards.map((card) => ({
-        concept_id: card.conceptId,
-        prompt_style: card.promptStyle,
-        prompt: card.prompt,
-        answer: card.answer,
-        exam_priority: card.examPriority,
-      }));
+        const cardPayload = generatedCards.map((card) => ({
+          concept_id: card.conceptId,
+          prompt_style: card.promptStyle,
+          prompt: card.prompt,
+          answer: card.answer,
+          exam_priority: card.examPriority,
+        }));
 
-      const { data: rawCreatedCards, error: cardError } = await supabase
-        .from("cards")
-        .insert(cardPayload)
-        .select("id");
+        const { data: rawCreatedCards, error: cardError } = await supabase
+          .from("cards")
+          .insert(cardPayload)
+          .select("id");
 
-      if (cardError) throw cardError;
+        if (cardError) throw cardError;
 
-      const createdCards = (rawCreatedCards ?? []) as CardIdRow[];
-      const tagPayload =
-        createdCards?.flatMap((card, index) =>
-          generatedCards[index].tags.map((tag) => ({
-            card_id: card.id,
-            tag,
-          })),
-        ) ?? [];
+        const createdCards = (rawCreatedCards ?? []) as CardIdRow[];
+        const tagPayload =
+          createdCards?.flatMap((card, index) =>
+            generatedCards[index].tags.map((tag) => ({
+              card_id: card.id,
+              tag,
+            })),
+          ) ?? [];
 
-      if (tagPayload.length > 0) {
-        const { error: tagError } = await supabase.from("card_tags").insert(tagPayload);
-        if (tagError) throw tagError;
+        if (tagPayload.length > 0) {
+          const { error: tagError } = await supabase.from("card_tags").insert(tagPayload);
+          if (tagError) throw tagError;
+        }
       }
 
       setMessage(`Yay! 🎉 Saved successfully. We'll remind you about this soon.`);
@@ -271,14 +296,33 @@ export function LearnFormView({ profile, editEntry }: LearnFormViewProps) {
           </div>
 
           <div className="cute-field">
+            <label htmlFor="image-upload">Upload Notes (Image to Flashcards OCR)</label>
+            <input
+              id="image-upload"
+              type="file"
+              accept="image/*"
+              onChange={handleImageSelect}
+              className="cute-input"
+              style={{ padding: "0.5rem" }}
+              disabled={!!editEntry}
+            />
+            {imageFile && (
+              <p style={{ fontSize: "0.8rem", color: "var(--primary)", margin: "0.25rem 0 0" }}>
+                📸 Image selected: {imageFile.name}
+              </p>
+            )}
+          </div>
+
+          <div className="cute-field">
             <label htmlFor="notes">Your Notes</label>
             <textarea
               id="notes"
               name="notes"
               className="cute-input"
               onChange={(event) => setNotes(event.target.value)}
-              placeholder="Summarize what you learned in your own words..."
+              placeholder="Summarize what you learned in your own words, OR upload an image above and let AI extract the text..."
               value={notes}
+              style={{ minHeight: "150px" }}
             />
           </div>
 
